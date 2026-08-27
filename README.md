@@ -1,7 +1,18 @@
 
 **Mists of Pandaria 5.4.8 Build 18414**
 
-Discord link: https://discord.gg/y3zspxan7k
+## Repack Data Files
+
+The compressed `Data` folder is distributed separately because it is too large to include in this repository.
+
+### Downloads
+
+- **Repack Data folder:** [Download](https://naver.me/GntbHFpb)
+- **Full game client:** [Mists of Pandaria 5.4.8 (18414).zip](https://xgf.nu/2j4ts) — 20 GB
+
+The client download link is available until **Thursday, December 3, 2026**.
+
+Discord link: https://discord.gg/qxfnSpjpg
 
 Client exe files" https://drive.google.com/file/d/1OCrtyvRXSvxnR9EoHWYfc-2Tbm5hX3ca
 
