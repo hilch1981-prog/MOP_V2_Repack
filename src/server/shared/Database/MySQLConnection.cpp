@@ -71,6 +71,13 @@ bool MySQLConnection::Open()
     //unsigned int timeout = 10;
 
     mysql_options(mysqlInit, MYSQL_SET_CHARSET_NAME, "utf8");
+    // MariaDB Connector/C can require TLS by default on Windows. The bundled
+    // database is bound to 127.0.0.1 only, so explicitly allow the local
+    // connection to use the existing password-authenticated transport.
+    my_bool sslEnforce = 0;
+    my_bool sslVerifyServerCert = 0;
+    mysql_options(mysqlInit, MYSQL_OPT_SSL_ENFORCE, &sslEnforce);
+    mysql_options(mysqlInit, MYSQL_OPT_SSL_VERIFY_SERVER_CERT, &sslVerifyServerCert);
     //mysql_options(mysqlInit, MYSQL_OPT_READ_TIMEOUT, (char const*)&timeout);
     #ifdef _WIN32
     if (m_connectionInfo.host == ".")                                           // named pipe use option (Windows)

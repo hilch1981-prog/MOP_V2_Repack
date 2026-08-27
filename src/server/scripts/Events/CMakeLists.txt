@@ -17,6 +17,11 @@ set(scripts_STAT_SRCS
   Events/pilgrims_bounty.cpp
   Events/winter_veil.cpp
   Events/event_afd_royale.cpp
+  Events/darkmoonfaire/darkmoon_cannon.cpp
+  Events/darkmoonfaire/darkmoon_ring_toss.cpp
+  Events/darkmoonfaire/darkmoon_shooting_gallery.cpp
+  Events/darkmoonfaire/darkmoon_tonk_challenge.cpp
+  Events/darkmoonfaire/darkmoon_whack_a_gnoll.cpp
 )
 
 message("  -> Prepared: Events")

@@ -293,6 +293,8 @@ class BattlePayMgr
         void SetEnableState(bool enabled) { m_enabled = enabled; }
         uint32 GetStoreCurrency() { return m_currency; }
         void SetStoreCurrency(uint32 currency) { m_currency = currency; }
+        std::string const& GetWalletName() const { return m_walletName; }
+        void SetWalletName(std::string const& walletName) { m_walletName = walletName; }
 
         BattlePayProductItemsVector const* GetItemsByProductId(uint32 productId) const
         {
@@ -342,6 +344,7 @@ class BattlePayMgr
 
         PurchaseInfo* m_purchase;
         uint32 m_currency;
+        std::string m_walletName;
         uint32 m_timer;
         bool m_enabled;
         bool m_sendPacket;
@@ -353,6 +356,7 @@ class BattlePayMgr
         void LoadGroupLocalesFromDb();
         void LoadEntriesFromDb();
         void LoadEntryLocalesFromDb();
+        std::string ResolveBalanceDescription(std::string description, WorldSession* session) const;
 };
 
 #define sBattlePayMgr Trinity::Singleton<BattlePayMgr>::instance()

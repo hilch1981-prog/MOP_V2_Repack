@@ -1,4 +1,4 @@
-/*
+﻿/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -6399,7 +6399,16 @@ AreaTriggerStruct const* ObjectMgr::GetMapEntranceTrigger(uint32 Map) const
 
 void ObjectMgr::SetHighestGuids()
 {
-    QueryResult result = CharacterDatabase.Query("SELECT MAX(guid) FROM characters");
+    // Mail and auction rows can survive an incomplete character database reset.
+    // Reserve every referenced player GUID so a new character cannot inherit
+    // another character's auction returns or mail.
+    QueryResult result = CharacterDatabase.Query(
+        "SELECT GREATEST("
+        "COALESCE((SELECT MAX(guid) FROM characters), 0), "
+        "COALESCE((SELECT MAX(receiver) FROM mail), 0), "
+        "COALESCE((SELECT MAX(receiver) FROM mail_items), 0), "
+        "COALESCE((SELECT MAX(itemowner) FROM auctionhouse), 0), "
+        "COALESCE((SELECT MAX(buyguid) FROM auctionhouse), 0))");
     if (result)
         _hiCharGuid = (*result)[0].GetUInt32()+1;
 

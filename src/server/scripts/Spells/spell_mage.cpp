@@ -2957,7 +2957,8 @@ class spell_mage_frostbolt : public SpellScript
     void Register() override
     {
         OnCheckCast += SpellCheckCastFn(spell_mage_frostbolt::CheckCast);
-        OnEffectLaunchTarget += SpellEffectFn(spell_mage_frostbolt::HandleDamage, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
+        if (m_scriptSpellId == 116)
+            OnEffectLaunchTarget += SpellEffectFn(spell_mage_frostbolt::HandleDamage, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
         OnEffectLaunchTarget += SpellEffectFn(spell_mage_frostbolt::HandleDamage, EFFECT_ALL, SPELL_EFFECT_SCHOOL_DAMAGE);
         OnEffectHitTarget += SpellEffectFn(spell_mage_frostbolt::HandleHeal, EFFECT_ALL, SPELL_EFFECT_SCRIPT_EFFECT);
     }

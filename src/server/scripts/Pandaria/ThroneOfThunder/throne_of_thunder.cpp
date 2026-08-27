@@ -3161,7 +3161,11 @@ class spell_focused_lightning_aoe_trash : public SpellScript
 
     void Register() override
     {
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_focused_lightning_aoe_trash::SelectTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
+        SpellInfo const* spell = sSpellMgr->GetSpellInfo(m_scriptSpellId);
+        Targets targets[] = { spell->Effects[EFFECT_0].TargetA.GetTarget(), spell->Effects[EFFECT_0].TargetB.GetTarget() };
+        for (Targets target : targets)
+            if (target && SpellImplicitTargetInfo(target).GetSelectionCategory() == TARGET_SELECT_CATEGORY_AREA)
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_focused_lightning_aoe_trash::SelectTargets, EFFECT_0, target);
         OnEffectHitTarget += SpellEffectFn(spell_focused_lightning_aoe_trash::HandleEffectHitTarget, EFFECT_0, SPELL_EFFECT_DUMMY);
     }
 };

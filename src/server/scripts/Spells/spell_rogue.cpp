@@ -710,7 +710,10 @@ class spell_rog_marked_for_death : public SpellScriptLoader
 
             void Register() override
             {
-                OnEffectRemove += AuraEffectRemoveFn(spell_rog_marked_for_death_AuraScript ::HandleRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+                if (m_scriptSpellId == 140149)
+                    OnEffectRemove += AuraEffectRemoveFn(spell_rog_marked_for_death_AuraScript::HandleRemove, EFFECT_0, SPELL_AURA_PERIODIC_DUMMY, AURA_EFFECT_HANDLE_REAL);
+                else
+                    OnEffectRemove += AuraEffectRemoveFn(spell_rog_marked_for_death_AuraScript::HandleRemove, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
             }
         };
 

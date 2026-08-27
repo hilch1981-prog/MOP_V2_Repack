@@ -3556,7 +3556,6 @@ void SpellMgr::LoadSpellInfoCorrections()
                     spellInfo->Speed = 0.0f;    // This spell's summon happens instantly
                     break;
                 case 66545: // Summon Memory (TrialOfTheChampion)
-                    spellInfo->Effects[0].TargetB = TARGET_UNIT_CASTER;
                     spellInfo->MaxAffectedTargets = 1;
                     break;
                 case 71614: // Ice Lock
@@ -7208,6 +7207,15 @@ void SpellMgr::LoadSpellInfoCorrections()
                 case 145655: // Shared Tornment
                     spellInfo->AttributesEx3 |= SPELL_ATTR3_STACK_FOR_DIFF_CASTERS;
                     spellInfo->DurationEntry = sSpellDurationStore.LookupEntry(21);
+                    // Build 18414 stores the functional Shared Torment area aura
+                    // only in the heroic difficulty rows. Mirror that shape in
+                    // the base SpellInfo so the target selector is registered
+                    // and remains active when the heroic variant is resolved.
+                    spellInfo->Effects[EFFECT_0].Effect = SPELL_EFFECT_APPLY_AURA;
+                    spellInfo->Effects[EFFECT_0].ApplyAuraName = SPELL_AURA_SHARE_DAMAGE_PCT;
+                    spellInfo->Effects[EFFECT_0].TargetA = TARGET_SRC_CASTER;
+                    spellInfo->Effects[EFFECT_0].TargetB = TARGET_UNIT_SRC_AREA_ENTRY;
+                    spellInfo->Effects[EFFECT_0].BasePoints = 100;
                     break;
                 case 143961: // Defiled Ground
                 case 144657: // Piercing Corruption

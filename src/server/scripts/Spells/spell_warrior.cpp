@@ -566,36 +566,25 @@ class spell_warr_last_stand : public SpellScriptLoader
     public:
         spell_warr_last_stand() : SpellScriptLoader("spell_warr_last_stand") { }
 
-        class spell_warr_last_stand_SpellScript : public SpellScript
+        class spell_warr_last_stand_AuraScript : public AuraScript
         {
-            PrepareSpellScript(spell_warr_last_stand_SpellScript);
+            PrepareAuraScript(spell_warr_last_stand_AuraScript);
 
-            bool Validate(SpellInfo const* /*spellInfo*/) override
-            {
-                if (!sSpellMgr->GetSpellInfo(WARRIOR_SPELL_LAST_STAND_TRIGGERED))
-                    return false;
-                return true;
-            }
-
-            void HandleDummy(SpellEffIndex /*effIndex*/)
+            void CalculateAmount(AuraEffect const* /*aurEff*/, float& amount, bool& /*canBeRecalculated*/)
             {
                 if (Unit* caster = GetCaster())
-                {
-                    int32 healthModSpellBasePoints0 = int32(caster->CountPctFromMaxHealth(30));
-                    caster->CastCustomSpell(caster, WARRIOR_SPELL_LAST_STAND_TRIGGERED, &healthModSpellBasePoints0, NULL, NULL, true, NULL);
-                }
+                    amount = float(caster->CountPctFromMaxHealth(amount > 0.0f ? amount : 30.0f));
             }
 
             void Register() override
             {
-                // add dummy effect spell handler to Last Stand
-                OnEffectHit += SpellEffectFn(spell_warr_last_stand_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
+                DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_warr_last_stand_AuraScript::CalculateAmount, EFFECT_0, SPELL_AURA_MOD_INCREASE_HEALTH_2);
             }
         };
 
-        SpellScript* GetSpellScript() const override
+        AuraScript* GetAuraScript() const override
         {
-            return new spell_warr_last_stand_SpellScript();
+            return new spell_warr_last_stand_AuraScript();
         }
 };
 
@@ -727,8 +716,7 @@ class spell_warr_revenge_shield_slam : public SpellScriptLoader
 
             void Register() override
             {
-                OnEffectHitTarget += SpellEffectFn(spell_warr_revenge_shield_slam_SpellScript::HandleCast, EFFECT_1, SPELL_EFFECT_ENERGIZE);
-                OnEffectHitTarget += SpellEffectFn(spell_warr_revenge_shield_slam_SpellScript::HandleCast, EFFECT_2, SPELL_EFFECT_ENERGIZE);
+                OnEffectHitTarget += SpellEffectFn(spell_warr_revenge_shield_slam_SpellScript::HandleCast, EFFECT_ALL, SPELL_EFFECT_ENERGIZE);
             }
         };
 

@@ -517,6 +517,7 @@ void PetBattle::EndBattle(PetBattleTeam* lostTeam, bool forfeit)
                         level -= 2;
 
                     battlePetMgr.Create(battlePet->GetSpecies(), level, battlePet->GetBreed(), battlePet->GetQuality());
+                    player->KilledMonsterCredit(65356); // Got one! - catch a battle pet
                     player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_CAPTURE_BATTLE_PET, battlePet->GetSpecies(), uint32(1 << battlePet->GetFamilty()), 0, player);
                     player->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_CAPTURE_BATTLE_PET2, 1, 0, 0, player);
                 }
@@ -524,6 +525,8 @@ void PetBattle::EndBattle(PetBattleTeam* lostTeam, bool forfeit)
 
             if (team == m_winningTeam)
             {
+                player->KilledMonsterCredit(65355); // Learning the Ropes - win a pet battle
+
                 // Idk how this supposed to work. Comments on wowhead say what: only frist pet, non-pvp, don't swap pet.
                 // At current time it's uselss because in pve battles opponenet is a single pet. But nevertheless...
                 uint32 familyMask = 0;

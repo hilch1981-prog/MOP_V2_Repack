@@ -3759,8 +3759,16 @@ class spell_pri_glyph_of_levitate : public AuraScript
 
     void Register() override
     {
-        OnEffectApply += AuraEffectApplyFn(spell_pri_glyph_of_levitate::HandleApply, EFFECT_0, SPELL_AURA_FEATHER_FALL, AURA_EFFECT_HANDLE_REAL);
-        OnEffectRemove += AuraEffectApplyFn(spell_pri_glyph_of_levitate::HandleRemove, EFFECT_0, SPELL_AURA_FEATHER_FALL, AURA_EFFECT_HANDLE_REAL);
+        if (m_scriptSpellId == 108939)
+        {
+            OnEffectApply += AuraEffectApplyFn(spell_pri_glyph_of_levitate::HandleApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+            OnEffectRemove += AuraEffectRemoveFn(spell_pri_glyph_of_levitate::HandleRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+        }
+        else
+        {
+            OnEffectApply += AuraEffectApplyFn(spell_pri_glyph_of_levitate::HandleApply, EFFECT_0, SPELL_AURA_FEATHER_FALL, AURA_EFFECT_HANDLE_REAL);
+            OnEffectRemove += AuraEffectRemoveFn(spell_pri_glyph_of_levitate::HandleRemove, EFFECT_0, SPELL_AURA_FEATHER_FALL, AURA_EFFECT_HANDLE_REAL);
+        }
     }
 };
 

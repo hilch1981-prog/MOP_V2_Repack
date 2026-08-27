@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -336,7 +336,7 @@ class npc_springvale_tormented_officer : public CreatureScript
                             DoCast(SPELL_SHIELD_WALL);
                             break;
                         case EVENT_FORSAKEN_ABILITY:
-                            //todo: ðåàëèçîâàòü ñïåëë
+                            //todo: Ñ€ÐµÐ°Ð»Ð¸Ð·Ð¾Ð²Ð°Ñ‚ÑŒ ÑÐ¿ÐµÐ»Ð»
                             break;
                         case EVENT_UNHOLY_EMPOWERMENT:
                             if (Creature* springvale = ObjectAccessor::GetCreature(*me, instance->GetData64(DATA_SPRINGVALE)))

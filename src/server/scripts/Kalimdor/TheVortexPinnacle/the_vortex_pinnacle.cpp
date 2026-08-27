@@ -1,4 +1,4 @@
-/*
+п»ї/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -18,7 +18,7 @@
 #include"ScriptPCH.h"
 #include "the_vortex_pinnacle.h"
 
-// Перепрыгивания в вихрях пока не реализованы
+// РџРµСЂРµРїСЂС‹РіРёРІР°РЅРёСЏ РІ РІРёС…СЂСЏС… РїРѕРєР° РЅРµ СЂРµР°Р»РёР·РѕРІР°РЅС‹
 
 enum Creatures
 {
@@ -1427,7 +1427,7 @@ void AddSC_the_vortex_pinnacle()
     new npc_golden_orb();
     new npc_fall_catcher_5();
     new spell_minister_of_air_lightning_lash();
-    //new spell_howling_gale_howling_gale();
+    new spell_howling_gale_howling_gale();
     new aura_script<spell_vp_lurk>("spell_vp_lurk");
     new at_catch_fall_5();
 };

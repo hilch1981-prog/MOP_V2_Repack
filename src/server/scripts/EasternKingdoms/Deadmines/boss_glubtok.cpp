@@ -1,4 +1,4 @@
-/*
+п»ї/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -18,7 +18,7 @@
 #include "ScriptPCH.h"
 #include "deadmines.h"
 
-//todo: реализовать flame wall
+//todo: СЂРµР°Р»РёР·РѕРІР°С‚СЊ flame wall
 
 enum ScriptTexts
 {

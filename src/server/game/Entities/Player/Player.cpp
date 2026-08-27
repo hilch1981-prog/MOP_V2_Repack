@@ -11787,7 +11787,7 @@ uint64 Player::GetDonatePoints() const
         return 0;
 
     Field* fields = result_donate->Fetch();
-    uint64 balance = fields[0].GetUInt32();
+    uint64 balance = fields[0].GetUInt64();
 
     return balance;
 }
@@ -11795,7 +11795,7 @@ uint64 Player::GetDonatePoints() const
 void Player::DeleteDonatePointsCount(uint64 count)
 {
     PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_BATTLEPAY_DECREMENT_DONATE_POINTS);
-    stmt->setUInt32(0, count);
+    stmt->setUInt64(0, count);
     stmt->setUInt32(1, GetSession()->GetAccountId());
     LoginDatabase.Query(stmt);
 }
@@ -11803,7 +11803,7 @@ void Player::DeleteDonatePointsCount(uint64 count)
 void Player::AddDonatePointsCount(uint64 count)
 {
     PreparedStatement* stmt = LoginDatabase.GetPreparedStatement(LOGIN_UPD_BATTLEPAY_INCREMENT_DONATE_POINTS);
-    stmt->setUInt32(0, count);
+    stmt->setUInt64(0, count);
     stmt->setUInt32(1, GetSession()->GetAccountId());
     LoginDatabase.Query(stmt);
 }
@@ -16180,6 +16180,15 @@ void Player::PrepareGossipMenu(WorldObject* source, uint32 menuId /*= 0*/, bool 
             menu->GetGossipMenu().AddGossipMenuItemData(itr->second.OptionIndex, itr->second.ActionMenuId, itr->second.ActionPoiId);
         }
     }
+
+    if (npcflags & UNIT_NPC_FLAG_STABLEMASTER && !GetBattlePetMgr().BattlePets.empty())
+    {
+        std::string healText = GetSession()->GetSessionDbcLocale() == LOCALE_koKR
+            ? "전투 애완동물을 치료하고 되살려 주세요."
+            : "Please heal and revive my battle pets.";
+        menu->GetGossipMenu().AddMenuItem(63, GOSSIP_ICON_CHAT, healText, 0, GOSSIP_OPTION_BATTLEPET_HEAL, "", 0);
+        menu->GetGossipMenu().AddGossipMenuItemData(63, 0, 0);
+    }
 }
 
 void Player::SendPreparedGossip(WorldObject* source)
@@ -16287,6 +16296,26 @@ void Player::OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 men
         case GOSSIP_OPTION_STABLEPET:
             GetSession()->SendPetList(guid, PET_SLOT_ACTIVE_FIRST, PET_SLOT_STABLE_LAST);
             break;
+        case GOSSIP_OPTION_BATTLEPET_HEAL:
+        {
+            BattlePetMgr& battlePetMgr = GetBattlePetMgr();
+            for (BattlePet* battlePet : battlePetMgr.BattlePets)
+            {
+                if (battlePet->GetDbState() == BATTLE_PET_DB_STATE_DELETE)
+                    continue;
+
+                battlePet->SetCurrentHealth(battlePet->GetMaxHealth());
+                battlePetMgr.SendBattlePetUpdate(battlePet, false);
+            }
+
+            // Every race-specific On The Mend quest uses one of these hidden kill credits.
+            uint32 const healCredits[] = { 64320, 65020, 65041, 65179, 65180, 65184, 65193, 65198, 65199, 65200, 65212, 65214 };
+            for (uint32 credit : healCredits)
+                KilledMonsterCredit(credit);
+
+            PlayerTalkClass->SendCloseGossip();
+            break;
+        }
         case GOSSIP_OPTION_TRAINER:
             GetSession()->SendTrainerList(guid);
             break;
@@ -18091,6 +18120,30 @@ uint16 Player::GetReqKillOrCastCurrentCount(uint32 quest_id, int32 entry)
                 return GetQuestObjectiveCounter((*citr)->Id);
 
     return 0;
+}
+
+void Player::ResetQuestObjectiveCounter(uint32 questId, uint8 type, uint32 objectId)
+{
+    if (GetQuestStatus(questId) != QUEST_STATUS_INCOMPLETE)
+        return;
+
+    Quest const* quest = sObjectMgr->GetQuestTemplate(questId);
+    if (!quest || !quest->GetQuestObjectiveCountType(type))
+        return;
+
+    uint16 logSlot = FindQuestSlot(questId);
+    for (QuestObjectiveSet::const_iterator itr = quest->m_questObjectives.begin(); itr != quest->m_questObjectives.end(); ++itr)
+    {
+        QuestObjective const* objective = *itr;
+        if (objective->Type != type || objective->ObjectId != objectId)
+            continue;
+
+        m_questObjectiveStatus[objective->Id] = 0;
+        MarkQuestObjectiveToSave(questId, objective->Id);
+        if (logSlot < MAX_QUEST_LOG_SIZE)
+            SetQuestSlotCounter(logSlot, objective->Index, 0);
+        break;
+    }
 }
 
 void Player::AdjustQuestReqItemCount(Quest const* quest, QuestStatusData& questStatusData)

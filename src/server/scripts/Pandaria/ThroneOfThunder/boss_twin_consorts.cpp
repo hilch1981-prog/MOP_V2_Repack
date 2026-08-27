@@ -2892,7 +2892,7 @@ void AddSC_boss_twin_consorts()
     new spell_script<spell_light_of_day_second_eff>("spell_light_of_day_second_eff");
     new aura_script<spell_fortitude_of_the_ox_eff>("spell_fortitude_of_the_ox_eff");
     new atrigger_script<sat_flames_of_passion>("sat_flames_of_passion");
-    //new atrigger_script<sat_icy_shadows>("sat_icy_shadows");
+    new atrigger_script<sat_icy_shadows>("sat_icy_shadows");
     new atrigger_script<sat_moon_lotus>("sat_moon_lotus");
     new atrigger_script<sat_celestial_star>("sat_celestial_star");
 }

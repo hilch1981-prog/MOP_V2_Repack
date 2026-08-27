@@ -2297,7 +2297,6 @@ class spell_soo_shockwave_missle : public SpellScript
         AfterCast += SpellCastFn(spell_soo_shockwave_missle::HandleAfterCast);
         OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_soo_shockwave_missle::FilterTargets, EFFECT_1, TARGET_UNIT_DEST_AREA_ENEMY);
         OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_soo_shockwave_missle::FilterShredderTargets, EFFECT_2, TARGET_UNIT_DEST_AREA_ENTRY);
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_soo_shockwave_missle::FilterTargets, EFFECT_3, TARGET_UNIT_DEST_AREA_ENEMY);
     }
 };
 

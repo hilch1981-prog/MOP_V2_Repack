@@ -1,4 +1,4 @@
-/*
+п»ї/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -18,7 +18,7 @@
 #include "ScriptPCH.h"
 #include "deadmines.h"
 
-// todo: реализовать робота и аддов на героике, включение робота после убийства пары мобов
+// todo: СЂРµР°Р»РёР·РѕРІР°С‚СЊ СЂРѕР±РѕС‚Р° Рё Р°РґРґРѕРІ РЅР° РіРµСЂРѕРёРєРµ, РІРєР»СЋС‡РµРЅРёРµ СЂРѕР±РѕС‚Р° РїРѕСЃР»Рµ СѓР±РёР№СЃС‚РІР° РїР°СЂС‹ РјРѕР±РѕРІ
 
 enum ScriptTexts
 {

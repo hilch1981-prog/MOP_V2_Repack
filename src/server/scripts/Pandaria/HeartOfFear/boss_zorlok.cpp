@@ -1712,11 +1712,6 @@ class spell_sonic_ring : public SpellScriptLoader
             }
         };
 
-        AuraScript* GetAuraScript() const override
-        {
-            return new spell_sonic_ring_AuraScript();
-        }
-
         SpellScript* GetSpellScript() const override
         {
             return new spell_sonic_ring_SpellScript();
@@ -1752,7 +1747,7 @@ class spell_pheromones_of_zeal : public SpellScriptLoader
 
             void Register() override
             {
-                OnEffectApply += AuraEffectApplyFn(spell_pheromones_of_zeal_AuraScript::Apply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+                OnEffectApply += AuraEffectApplyFn(spell_pheromones_of_zeal_AuraScript::Apply, EFFECT_1, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
             }
         };
 

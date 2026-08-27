@@ -1,4 +1,4 @@
-/*
+п»ї/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -19,10 +19,10 @@
 #include"Spell.h"
 #include"bastion_of_twilight.h"
 
-// todo: разобраться с entry мобов у orders
-// todo: реализовать правильные absorb fire, absorb shadow
-// todo: сделать героик скиллы
-// todo: разобраться с таргетами fester blood
+// todo: СЂР°Р·РѕР±СЂР°С‚СЊСЃСЏ СЃ entry РјРѕР±РѕРІ Сѓ orders
+// todo: СЂРµР°Р»РёР·РѕРІР°С‚СЊ РїСЂР°РІРёР»СЊРЅС‹Рµ absorb fire, absorb shadow
+// todo: СЃРґРµР»Р°С‚СЊ РіРµСЂРѕРёРє СЃРєРёР»Р»С‹
+// todo: СЂР°Р·РѕР±СЂР°С‚СЊСЃСЏ СЃ С‚Р°СЂРіРµС‚Р°РјРё fester blood
 
 enum ScriptTexts
 {

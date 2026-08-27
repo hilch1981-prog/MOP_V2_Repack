@@ -671,8 +671,7 @@ class spell_gen_clone : public SpellScript
         }
         else
         {
-            OnEffectHitTarget += SpellEffectFn(spell_gen_clone::HandleScriptEffect, EFFECT_1, SPELL_EFFECT_SCRIPT_EFFECT);
-            OnEffectHitTarget += SpellEffectFn(spell_gen_clone::HandleScriptEffect, EFFECT_2, SPELL_EFFECT_SCRIPT_EFFECT);
+            OnEffectHitTarget += SpellEffectFn(spell_gen_clone::HandleScriptEffect, EFFECT_ALL, SPELL_EFFECT_SCRIPT_EFFECT);
         }
     }
 };
@@ -2362,8 +2361,7 @@ class spell_gen_remove_flight_auras : public SpellScriptLoader
 
 enum Replenishment
 {
-    SPELL_REPLENISHMENT             = 57669,
-    SPELL_INFINITE_REPLENISHMENT    = 61782
+    SPELL_REPLENISHMENT             = 57669
 };
 
 class spell_gen_replenishment : public SpellScriptLoader
@@ -2377,8 +2375,7 @@ class spell_gen_replenishment : public SpellScriptLoader
 
             bool Validate(SpellInfo const* /*spellInfo*/) override
             {
-                if (!sSpellMgr->GetSpellInfo(SPELL_REPLENISHMENT) ||
-                    !sSpellMgr->GetSpellInfo(SPELL_INFINITE_REPLENISHMENT))
+                if (!sSpellMgr->GetSpellInfo(SPELL_REPLENISHMENT))
                     return false;
                 return true;
             }
@@ -2394,9 +2391,6 @@ class spell_gen_replenishment : public SpellScriptLoader
                 {
                     case SPELL_REPLENISHMENT:
                         amount = GetUnitOwner()->GetMaxPower(POWER_MANA) * 0.002f;
-                        break;
-                    case SPELL_INFINITE_REPLENISHMENT:
-                        amount = GetUnitOwner()->GetMaxPower(POWER_MANA) * 0.0025f;
                         break;
                     default:
                         break;
@@ -4637,7 +4631,6 @@ class spell_gen_water_strider_water_walking : public AuraScript
 
     void Register() override
     {
-        DoCheckAreaTarget += AuraCheckAreaTargetFn(spell_gen_water_strider_water_walking::CheckArea);
         OnProc += AuraProcFn(spell_gen_water_strider_water_walking::HandleProc);
     }
 };
@@ -4789,6 +4782,7 @@ void AddSC_generic_spell_scripts()
     new spell_gen_lifebloom("spell_faction_champion_dru_lifebloom", SPELL_FACTION_CHAMPIONS_DRU_LIFEBLOOM_FINAL_HEAL);
     new spell_gen_mounted_charge();
     new spell_gen_netherbloom();
+    new spell_gen_nightmare_vine();
     new spell_gen_obsidian_armor();
     new spell_gen_on_tournament_mount();
     new spell_gen_oracle_wolvar_reputation();

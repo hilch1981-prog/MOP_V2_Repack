@@ -22,7 +22,7 @@
 
 /* MySQL 8.0 removed the my_bool typedef (deprecated since 5.7.5).
    This project still uses it for result/prepared-statement binding. */
-#if defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID >= 80000
+#if defined(MYSQL_VERSION_ID) && MYSQL_VERSION_ID >= 80000 && !defined(MARIADB_VERSION_ID)
 #undef my_bool
 typedef bool my_bool;
 #endif

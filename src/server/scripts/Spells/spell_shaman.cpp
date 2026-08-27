@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -303,49 +303,34 @@ class spell_sha_mail_specialization : public SpellScriptLoader
     public:
         spell_sha_mail_specialization() : SpellScriptLoader("spell_sha_mail_specialization") { }
 
-        class spell_sha_mail_specialization_AuraScript : public AuraScript
+        class spell_sha_mail_specialization_SpellScript : public SpellScript
         {
-            PrepareAuraScript(spell_sha_mail_specialization_AuraScript);
+            PrepareSpellScript(spell_sha_mail_specialization_SpellScript);
 
-            void OnApply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            void HandleDummy(SpellEffIndex /*effIndex*/)
             {
-                if (!GetCaster())
+                Player* player = GetHitPlayer();
+                if (!player)
                     return;
 
-                if (Player* _player = GetCaster()->ToPlayer())
-                {
-                    if (_player->GetTalentSpecialization() == SPEC_SHAMAN_ELEMENTAL
-                            || _player->GetTalentSpecialization() == SPEC_SHAMAN_RESTORATION)
-                        _player->CastSpell(_player, SPELL_SHA_MAIL_SPECIALISATION_INT, true);
-                    else if (_player->GetTalentSpecialization() == SPEC_SHAMAN_ENHANCEMENT)
-                        _player->CastSpell(_player, SPELL_SHA_MAIL_SPECIALIZATION_AGI, true);
-                }
-            }
-
-            void OnRemove(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
-            {
-                if (!GetCaster())
-                    return;
-
-                if (Player* _player = GetCaster()->ToPlayer())
-                {
-                    if (_player->HasAura(SPELL_SHA_MAIL_SPECIALISATION_INT))
-                        _player->RemoveAura(SPELL_SHA_MAIL_SPECIALISATION_INT);
-                    else if (_player->HasAura(SPELL_SHA_MAIL_SPECIALIZATION_AGI))
-                        _player->RemoveAura(SPELL_SHA_MAIL_SPECIALIZATION_AGI);
-                }
+                player->RemoveAurasDueToSpell(SPELL_SHA_MAIL_SPECIALISATION_INT);
+                player->RemoveAurasDueToSpell(SPELL_SHA_MAIL_SPECIALIZATION_AGI);
+                if (player->GetTalentSpecialization() == SPEC_SHAMAN_ELEMENTAL
+                        || player->GetTalentSpecialization() == SPEC_SHAMAN_RESTORATION)
+                    player->CastSpell(player, SPELL_SHA_MAIL_SPECIALISATION_INT, true);
+                else if (player->GetTalentSpecialization() == SPEC_SHAMAN_ENHANCEMENT)
+                    player->CastSpell(player, SPELL_SHA_MAIL_SPECIALIZATION_AGI, true);
             }
 
             void Register() override
             {
-                AfterEffectApply += AuraEffectApplyFn(spell_sha_mail_specialization_AuraScript::OnApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-                AfterEffectRemove += AuraEffectRemoveFn(spell_sha_mail_specialization_AuraScript::OnRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+                OnEffectHitTarget += SpellEffectFn(spell_sha_mail_specialization_SpellScript::HandleDummy, EFFECT_0, SPELL_EFFECT_DUMMY);
             }
         };
 
-        AuraScript* GetAuraScript() const override
+        SpellScript* GetSpellScript() const override
         {
-            return new spell_sha_mail_specialization_AuraScript();
+            return new spell_sha_mail_specialization_SpellScript();
         }
 };
 
@@ -2486,7 +2471,7 @@ class spell_sha_stormlash_totem : public AuraScript
 
     bool CheckProc(ProcEventInfo& eventInfo)
     {
-        // If it’s periodic damage, it doesn’t Stormlash, unless it’s Mind Flay, Malefic Grasp, or Drain Soul.
+        // If itâ€™s periodic damage, it doesnâ€™t Stormlash, unless itâ€™s Mind Flay, Malefic Grasp, or Drain Soul.
         if (eventInfo.GetTypeMask() & PROC_FLAG_DONE_PERIODIC)
             if (!eventInfo.GetSpellInfo()->IsChanneled())
                 return false;

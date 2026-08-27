@@ -1027,58 +1027,43 @@ class spell_shadopan_explosion : public SpellScriptLoader
         }
 };
 
-class ApparitionsTargetSelector
-{
-    public:
-        bool operator()(WorldObject* object) const
-        {
-            if (object->ToCreature() && (object->GetEntry() == 58807 || object->GetEntry() == 58810 || object->GetEntry() == 58803))
-                return false;
-
-            return true;
-        }
-};
-
 class spell_shadopan_apparitions : public SpellScriptLoader
 {
     public:
         spell_shadopan_apparitions() : SpellScriptLoader("spell_shadopan_apparitions") { }
 
-        class spell_shadopan_apparitions_SpellScript : public SpellScript
-        {
-            PrepareSpellScript(spell_shadopan_apparitions_SpellScript);
-
-            void FilterTargets(std::list<WorldObject*>& targets)
-            {
-                targets.remove_if (ApparitionsTargetSelector());
-            }
-
-            void Register() override
-            {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_shadopan_apparitions_SpellScript::FilterTargets, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
-            }
-        };
-
         class spell_shadopan_apparitions_AuraScript : public AuraScript
         {
             PrepareAuraScript(spell_shadopan_apparitions_AuraScript);
 
-            void CalculateAmount(AuraEffect const* AuraEffect, float& amount, bool& /*canBeRecalculated*/)
+            void OnPeriodic(AuraEffect const* /*aurEff*/)
             {
-                if (auto const owner = GetOwner()->ToCreature())
-                    amount = owner->GetMaxHealth();
+                PreventDefaultAction();
+
+                if (Unit* caster = GetCaster())
+                {
+                    if (caster->HasAura(111690))
+                    {
+                        GetAura()->Remove();
+                        return;
+                    }
+
+                    std::list<Creature*> hatredList;
+                    caster->GetCreatureListWithEntryInGrid(hatredList, NPC_RESIDUAL_OF_HATRED, 20.0f);
+                    caster->GetCreatureListWithEntryInGrid(hatredList, NPC_VESTIGE_OF_HATRED, 20.0f);
+                    caster->GetCreatureListWithEntryInGrid(hatredList, NPC_FRAGMENT_OF_HATRED, 20.0f);
+
+                    for (Creature* hatred : hatredList)
+                        if (hatred->IsAlive())
+                            hatred->CastSpell(hatred, GetSpellInfo()->Effects[EFFECT_0].TriggerSpell, true);
+                }
             }
 
             void Register() override
             {
-                DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_shadopan_apparitions_AuraScript::CalculateAmount, EFFECT_0, SPELL_AURA_SCHOOL_ABSORB);
+                OnEffectPeriodic += AuraEffectPeriodicFn(spell_shadopan_apparitions_AuraScript::OnPeriodic, EFFECT_0, SPELL_AURA_PERIODIC_TRIGGER_SPELL);
             }
         };
-
-        SpellScript* GetSpellScript() const override
-        {
-            return new spell_shadopan_apparitions_SpellScript();
-        }
 
         AuraScript* GetAuraScript() const override
         {

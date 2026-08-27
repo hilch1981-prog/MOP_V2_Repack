@@ -1,4 +1,4 @@
-/*
+ï»¿/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -84,7 +84,7 @@ enum Adds
     NPC_ROARING_FLAME                   = 41807,
     NPC_ROARING_FLAME_TARGET            = 42121,
     NPC_ABNOXIOUS_FIEND                 = 49740,
-    NPC_LORD_VICTOR_NEFARIUS_A          = 43396, // íå óâåðåí
+    NPC_LORD_VICTOR_NEFARIUS_A          = 43396, // Ð½Ðµ ÑƒÐ²ÐµÑ€ÐµÐ½
 
     NPC_IMP_PORTAL_STALKER              = 49801,
     NPC_BLIND_DRAGON_TAIL               = 42356,
@@ -150,15 +150,15 @@ const Position dwarvenshieldsPos[8] =
 
 const Position atramedesnefariusspawnPos = {96.54f, -220.32f, 94.90f, 0.06f};
 
-Unit* atramedesTarget; // öåëü ëó÷à àòðàìåäà
-Creature* atramedesShield; // ïîñëåäíèé èñïîëüçîâàííûé ùèò
+Unit* atramedesTarget; // Ñ†ÐµÐ»ÑŒ Ð»ÑƒÑ‡Ð° Ð°Ñ‚Ñ€Ð°Ð¼ÐµÐ´Ð°
+Creature* atramedesShield; // Ð¿Ð¾ÑÐ»ÐµÐ´Ð½Ð¸Ð¹ Ð¸ÑÐ¿Ð¾Ð»ÑŒÐ·Ð¾Ð²Ð°Ð½Ð½Ñ‹Ð¹ Ñ‰Ð¸Ñ‚
 Creature* roaringsummon;
 Creature* _shields[8];
 
 //
-// ðîòàöèÿ çàêëèíàíèé ïðè íàçåìíîé ôàçå:
+// Ñ€Ð¾Ñ‚Ð°Ñ†Ð¸Ñ Ð·Ð°ÐºÐ»Ð¸Ð½Ð°Ð½Ð¸Ð¹ Ð¿Ñ€Ð¸ Ð½Ð°Ð·ÐµÐ¼Ð½Ð¾Ð¹ Ñ„Ð°Ð·Ðµ:
 // pulse, breath, pulse, breath, flame, pulse, breath, pulse
-// ôàçà 80ñåê, çíà÷èò ïðèìåðíî êàæäûå 13 ñåêóíä ÷òî-òî äîëæíî êàñòîâàòüñÿ, ïîçæå íàñòðîþ òàéìåðû òî÷íåå
+// Ñ„Ð°Ð·Ð° 80ÑÐµÐº, Ð·Ð½Ð°Ñ‡Ð¸Ñ‚ Ð¿Ñ€Ð¸Ð¼ÐµÑ€Ð½Ð¾ ÐºÐ°Ð¶Ð´Ñ‹Ðµ 13 ÑÐµÐºÑƒÐ½Ð´ Ñ‡Ñ‚Ð¾-Ñ‚Ð¾ Ð´Ð¾Ð»Ð¶Ð½Ð¾ ÐºÐ°ÑÑ‚Ð¾Ð²Ð°Ñ‚ÑŒÑÑ, Ð¿Ð¾Ð·Ð¶Ðµ Ð½Ð°ÑÑ‚Ñ€Ð¾ÑŽ Ñ‚Ð°Ð¹Ð¼ÐµÑ€Ñ‹ Ñ‚Ð¾Ñ‡Ð½ÐµÐµ
 //
 
 class boss_atramedes : public CreatureScript
@@ -257,7 +257,7 @@ class boss_atramedes : public CreatureScript
                 switch (summon->GetEntry())
                 {
                     case NPC_TRACKING_FLAMES:
-                        //todo: ðåàëèçîâàòü ïåðåäâèæåíèå
+                        //todo: Ñ€ÐµÐ°Ð»Ð¸Ð·Ð¾Ð²Ð°Ñ‚ÑŒ Ð¿ÐµÑ€ÐµÐ´Ð²Ð¸Ð¶ÐµÐ½Ð¸Ðµ
                         DoCast(summon, SPELL_SONIC_BREATH);
                         break;
                     case NPC_ROARING_FLAME_TARGET:
@@ -350,7 +350,7 @@ class boss_atramedes : public CreatureScript
                             me->GetMotionMaster()->MovePoint(2, groundPos);
                             break;
                         case EVENT_NEXT_SPELL:
-                            // Çà îäíó ôàçó áóäåò ñêàñòîâàíî 7 ñêèëëîâ
+                            // Ð—Ð° Ð¾Ð´Ð½Ñƒ Ñ„Ð°Ð·Ñƒ Ð±ÑƒÐ´ÐµÑ‚ ÑÐºÐ°ÑÑ‚Ð¾Ð²Ð°Ð½Ð¾ 7 ÑÐºÐ¸Ð»Ð»Ð¾Ð²
                             if (nextspell > 7)
                                 break;
                             switch (nextspell)
@@ -487,7 +487,7 @@ class npc_sonar_pulse : public CreatureScript
             {
                 if (type == POINT_MOTION_TYPE)
                 {
-                    // Åñëè íïö äîñòèã êîíå÷íîé òî÷êè, òî äåñïàâí
+                    // Ð•ÑÐ»Ð¸ Ð½Ð¿Ñ† Ð´Ð¾ÑÑ‚Ð¸Ð³ ÐºÐ¾Ð½ÐµÑ‡Ð½Ð¾Ð¹ Ñ‚Ð¾Ñ‡ÐºÐ¸, Ñ‚Ð¾ Ð´ÐµÑÐ¿Ð°Ð²Ð½
                     if (pointId == 1)
                     {
                         me->DespawnOrUnsummon();
@@ -505,7 +505,7 @@ class npc_sonar_pulse : public CreatureScript
                 {
                     switch (eventId)
                     {
-                        // ×åðåç 1ñåê íïö íà÷èíàåò äâèæåíèå
+                        // Ð§ÐµÑ€ÐµÐ· 1ÑÐµÐº Ð½Ð¿Ñ† Ð½Ð°Ñ‡Ð¸Ð½Ð°ÐµÑ‚ Ð´Ð²Ð¸Ð¶ÐµÐ½Ð¸Ðµ
                         case EVENT_SONAR_PULSE_MOVE:
                             if (target)
                                 me->GetNearPosition(pos, 50.0f, me->GetAngle(target->GetPositionX(), target->GetPositionY()));

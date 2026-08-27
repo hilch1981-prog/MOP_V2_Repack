@@ -1,4 +1,4 @@
-/*
+﻿/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -1278,10 +1278,7 @@ void AddSC_event_afd_royale()
 {
     new npc_afd_royale_controller();
     new npc_afd_royale_ring();
-    new spell_afd_royale_in_map();
-    new spell_afd_royale_leaving_game();
-    new spell_afd_royale_drop();
-    new spell_afd_royale_out_of_ring_damage_aura();
-    new spell_afd_royale_buff_trigger();
-    new spell_afd_royale_portal_trigger();
+    // The custom Royale spell IDs are not present in the 5.4.8 build 18414
+    // client. Keep the NPC portion available, but do not register unusable
+    // SpellScriptLoaders against non-existent client records.
 }

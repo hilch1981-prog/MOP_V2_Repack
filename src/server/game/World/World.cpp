@@ -1,4 +1,4 @@
-/*
+﻿/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -1133,6 +1133,7 @@ void World::LoadConfigSettings(bool reload)
     // Battle pay
     sBattlePayMgr->SetEnableState(sConfigMgr->GetBoolDefault("BattlePay.StoreEnabled", false));
     sBattlePayMgr->SetStoreCurrency(sConfigMgr->GetIntDefault("BattlePay.Currency", BATTLE_PAY_CURRENCY_BETA));
+    sBattlePayMgr->SetWalletName(sConfigMgr->GetStringDefault("BattlePay.WalletName", "Battle Coins"));
 
     // Visibility on continents
     m_MaxVisibleDistanceOnContinents = sConfigMgr->GetFloatDefault("Visibility.Distance.Continents", DEFAULT_VISIBILITY_DISTANCE);
@@ -1529,7 +1530,10 @@ void World::LoadConfigSettings(bool reload)
     m_bool_configs[CONFIG_ENABLE_ILVL_SCALING_PVP] = sConfigMgr->GetBoolDefault("Ilvl.Scaling.PvP.Enable", true);
     m_int_configs[CONFIG_ILVL_SCALING_PVE] = sConfigMgr->GetIntDefault("Ilvl.Scaling.PvE", 463);
     m_int_configs[CONFIG_ILVL_SCALING_PVP] = sConfigMgr->GetIntDefault("Ilvl.Scaling.PvP", 463);
-    m_bool_configs[CONFIG_PET_BATTLES_ENABLED] = sConfigMgr->GetIntDefault("PetBattles.Endabled", true);
+    // Keep the historical misspelled key as a fallback, but prefer the
+    // correctly named setting for new installations.
+    bool legacyPetBattlesEnabled = sConfigMgr->GetBoolDefault("PetBattles.Endabled", true);
+    m_bool_configs[CONFIG_PET_BATTLES_ENABLED] = sConfigMgr->GetBoolDefault("PetBattles.Enabled", legacyPetBattlesEnabled);
 
     m_int_configs[CONFIG_ICORE_ARENA_HIGH_LATENCY_THRESHOLD] = sConfigMgr->GetIntDefault("ICore.Arena.HighLatencyThreshold", 200);
     m_arenaPrecastSpells.clear();

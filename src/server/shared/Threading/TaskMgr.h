@@ -27,12 +27,13 @@
 
 class ThreadPool
 {
-    typedef std::unique_ptr<boost::asio::io_service::work> worker;
-    typedef boost::asio::io_service service;
+    typedef boost::asio::io_context service;
+    typedef boost::asio::executor_work_guard<service::executor_type> work_guard;
+    typedef std::unique_ptr<work_guard> worker;
     typedef boost::thread_group pool;
 public:
     ThreadPool(size_t threads)
-        : _worker(new worker::element_type{ _service })
+        : _worker(new work_guard(boost::asio::make_work_guard(_service)))
     {
         while (threads--)
         {
@@ -51,7 +52,7 @@ public:
     template<class F>
     void Enqueue(F f)
     {
-        _service.post(f);
+        boost::asio::post(_service, std::move(f));
     }
 
 private:

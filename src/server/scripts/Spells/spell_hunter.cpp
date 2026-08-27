@@ -3024,8 +3024,13 @@ class spell_hunt_deterrence : public AuraScript
 
     void Register() override
     {
-        DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_hunt_deterrence::CalculateAmount, EFFECT_ALL, SPELL_AURA_MOD_ATTACKER_MELEE_HIT_CHANCE);
-        DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_hunt_deterrence::CalculateAmount, EFFECT_ALL, SPELL_AURA_MOD_ATTACKER_RANGED_HIT_CHANCE);
+        SpellInfo const* spell = sSpellMgr->GetSpellInfo(m_scriptSpellId);
+        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+        {
+            AuraType aura = AuraType(spell->Effects[i].ApplyAuraName);
+            if (aura == SPELL_AURA_MOD_ATTACKER_MELEE_HIT_CHANCE || aura == SPELL_AURA_MOD_ATTACKER_RANGED_HIT_CHANCE)
+                DoEffectCalcAmount += AuraEffectCalcAmountFn(spell_hunt_deterrence::CalculateAmount, i, aura);
+        }
     }
 };
 

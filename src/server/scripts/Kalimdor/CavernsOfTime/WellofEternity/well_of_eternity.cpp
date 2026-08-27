@@ -3615,7 +3615,7 @@ void AddSC_well_of_eternity()
     new at_well_of_eternity_intro();
     new at_well_of_eternity_perotharn_preevent_appear();
     // FIXME: if players don't move to first trash pack after event started, pass can be closed and players can't complete instance
-    //new at_well_of_eternity_skip_illidan_intro();
+    new at_well_of_eternity_skip_illidan_intro();
     new at_well_of_eternity_illidan_outro_resume();
     new spell_well_of_eternity_shadow_walk();
     new spell_well_of_eternity_shadowcloak_illidan();

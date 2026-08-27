@@ -3573,6 +3573,12 @@ BattlePay.StoreEnabled = 1
 
 BattlePay.Currency = 3
 
+#    BattlePay.WalletName
+#        Description: Name shown for the Battle Pay account balance.
+#        Default:     "Battle Coins"
+
+BattlePay.WalletName = "Battle Coins"
+
 #
 ###################################################################################################
 
@@ -4059,6 +4065,8 @@ TransferMail.Enabled = 1
 XP.Kill.Difference = 10
 XP.Gather.Difference = 10
 
+# Preferred spelling. The legacy PetBattles.Endabled key remains supported.
+PetBattles.Enabled = 1
 PetBattles.Endabled = 1
 
 ICore.Arena.HighLatencyThreshold = 200

@@ -850,6 +850,23 @@ void AuctionBotSeller::AddNewAuctions(SellerConfiguration& config)
 
     AuctionHouseEntry const* ahEntry = sAuctionHouseStore.LookupEntry(houseid);
 
+    // AuctionEntry::auctioneer stores a creature spawn GUID, not the AHBot
+    // character GUID.  The old assignment used the owner and made every bot
+    // auction fail to load after a restart.  These are valid auctioneer spawns
+    // in the distributed world database (Alliance, Horde, Neutral).
+    uint32 auctioneerGuid = 274539;
+    switch (config.GetHouseType())
+    {
+        case AUCTION_HOUSE_ALLIANCE:
+            auctioneerGuid = 188909;
+            break;
+        case AUCTION_HOUSE_HORDE:
+            auctioneerGuid = 195190;
+            break;
+        default:
+            break;
+    }
+
     AuctionHouseObject* auctionHouse = sAuctionMgr->GetAuctionsMap(config.GetHouseType());
 
     ItemsToSellArray itemsToSell;
@@ -923,7 +940,7 @@ void AuctionBotSeller::AddNewAuctions(SellerConfiguration& config)
         auctionEntry->itemEntry = item->GetEntry();
         auctionEntry->startbid = bidPrice;
         auctionEntry->buyout = buyoutPrice;
-        auctionEntry->auctioneer = auctionEntry->owner; // to be removed
+        auctionEntry->auctioneer = auctioneerGuid;
         //auctionEntry->houseId = houseid;
         auctionEntry->bidder = 0;
         auctionEntry->bid = 0;

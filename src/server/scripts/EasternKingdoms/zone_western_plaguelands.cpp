@@ -212,5 +212,5 @@ void AddSC_western_plaguelands()
 {
     new creature_script<npc_dark_master_gandling_quest>("npc_dark_master_gandling_quest");
     new npc_thassarian_quest();
-    //new aura_script<spell_shadow_prison_gandling>("spell_shadow_prison_gandling");
+    new aura_script<spell_shadow_prison_gandling>("spell_shadow_prison_gandling");
 }

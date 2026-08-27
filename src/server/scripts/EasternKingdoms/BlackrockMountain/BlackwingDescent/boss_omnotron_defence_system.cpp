@@ -1331,7 +1331,14 @@ class spell_omnotron_flamethower : public SpellScript
 
     void Register() override
     {
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_omnotron_flamethower::SelectTargets, EFFECT_0, TARGET_UNIT_CONE_ENEMY_104);
+        SpellInfo const* spell = sSpellMgr->GetSpellInfo(m_scriptSpellId);
+        Targets targets[] = { spell->Effects[EFFECT_0].TargetA.GetTarget(), spell->Effects[EFFECT_0].TargetB.GetTarget() };
+        for (Targets target : targets)
+        {
+            auto category = SpellImplicitTargetInfo(target).GetSelectionCategory();
+            if (target && (category == TARGET_SELECT_CATEGORY_AREA || category == TARGET_SELECT_CATEGORY_CONE))
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_omnotron_flamethower::SelectTargets, EFFECT_0, target);
+        }
     }
 };
 

@@ -6962,6 +6962,11 @@ void Spell::EffectHealBattlePet(SpellEffIndex effIndex)
         return;
 
     auto& battlePetMgr = unitTarget->ToPlayer()->GetBattlePetMgr();
+    int32 effectValue = GetSpellInfo()->Effects[effIndex].CalcValue(m_caster);
+    uint32 healPercent = uint32(std::min<int32>(std::max<int32>(effectValue, 0), 100));
+    if (!healPercent)
+        healPercent = 100;
+
     for (auto&& battlePet : battlePetMgr.BattlePets)
     {
         // don't heal pets marked for deletion
@@ -6972,8 +6977,9 @@ void Spell::EffectHealBattlePet(SpellEffIndex effIndex)
         if (battlePet->GetCurrentHealth() == battlePet->GetMaxHealth())
             continue;
 
-        // heal and notify client
-        battlePet->SetCurrentHealth(battlePet->GetMaxHealth());
+        // SPELL_EFFECT_HEAL_BATTLEPET_PCT heals by the effect percentage.
+        uint32 healAmount = std::max<uint32>(1, battlePet->GetMaxHealth() * healPercent / 100);
+        battlePet->SetCurrentHealth(std::min<uint32>(battlePet->GetMaxHealth(), battlePet->GetCurrentHealth() + healAmount));
         battlePetMgr.SendBattlePetUpdate(battlePet, false);
     }
 }
@@ -6989,17 +6995,16 @@ void Spell::EffectBattlePetsUnlock(SpellEffIndex effIndex)
 
     BattlePetMgr& battlePetMgr = player->GetBattlePetMgr();
 
-    if (player->HasFlag(PLAYER_FIELD_PLAYER_FLAGS, PLAYER_FLAGS_BATTLE_PET_ENABLED) && battlePetMgr.HasLoadoutSlot(BATTLE_PET_LOADOUT_SLOT_1))
-        return;
-
     player->SetFlag(PLAYER_FIELD_PLAYER_FLAGS, PLAYER_FLAGS_BATTLE_PET_ENABLED);
 
     player->LearnSpell(SPELL_BATTLE_PET_TRAINING_PASSIVE, false);
     player->LearnSpell(SPELL_TRACK_PETS, false);
     player->LearnSpell(SPELL_REVIVE_BATTLE_PETS, false);
 
-    if (!battlePetMgr.HasLoadoutSlot(BATTLE_PET_LOADOUT_SLOT_1))
-        battlePetMgr.UnlockLoadoutSlot(BATTLE_PET_LOADOUT_SLOT_1);
+    uint8 unlockCount = uint8(sWorld->getIntConfig(CONFIG_BATTLE_PET_LOADOUT_UNLOCK_COUNT));
+    for (uint8 slot = 0; slot < unlockCount; ++slot)
+        if (!battlePetMgr.HasLoadoutSlot(slot))
+            battlePetMgr.UnlockLoadoutSlot(slot);
 }
 
 void Spell::EffectUncageBattlePet(SpellEffIndex effIndex)

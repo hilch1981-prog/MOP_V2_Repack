@@ -4441,6 +4441,7 @@ void AddSC_item_spell_scripts()
     new spell_item_savory_deviate_delight();
     new spell_item_scroll_of_recall();
     new spell_item_unsated_craving();
+    new spell_item_stay_of_execution();
     new spell_item_shadows_fate();
     new spell_item_shadowmourne();
     new spell_item_shadowmourne_soul_fragment();

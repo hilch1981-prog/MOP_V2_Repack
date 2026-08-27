@@ -5070,7 +5070,6 @@ class spell_jade_forest_rappelling_rope : public SpellScript
     void Register() override
     {
         OnEffectLaunch += SpellEffectFn(spell_jade_forest_rappelling_rope::HandleSummon, EFFECT_0, SPELL_EFFECT_SUMMON);
-        OnEffectHitTarget += SpellEffectFn(spell_jade_forest_rappelling_rope::HandleTeleport, EFFECT_0, SPELL_EFFECT_TELEPORT_UNITS);
         OnEffectHitTarget += SpellEffectFn(spell_jade_forest_rappelling_rope::HandleInstantLanding, EFFECT_2, SPELL_EFFECT_TRIGGER_SPELL);
     }
 };

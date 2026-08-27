@@ -1281,26 +1281,26 @@ class spell_unseen_strike_aura : public SpellScriptLoader
     public:
         spell_unseen_strike_aura() : SpellScriptLoader("spell_unseen_strike") { }
 
-        class spell_unseen_strike_auraAuraScript : public AuraScript
+        class spell_unseen_strike_auraSpellScript : public SpellScript
         {
-            PrepareAuraScript(spell_unseen_strike_auraAuraScript);
+            PrepareSpellScript(spell_unseen_strike_auraSpellScript);
 
-            void Apply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            void Apply(SpellEffIndex /*effIndex*/)
             {
                 if (Unit* caster = GetCaster())
-                    if (Unit* target = GetTarget())
-                        caster->AddAura(SPELL_UNSEEN_STRIKE_TR, target);
+                    if (Unit* target = GetHitUnit())
+                        caster->CastSpell(target, SPELL_UNSEEN_STRIKE_TR, true);
             }
 
             void Register() override
             {
-                OnEffectApply += AuraEffectApplyFn(spell_unseen_strike_auraAuraScript::Apply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+                OnEffectHitTarget += SpellEffectFn(spell_unseen_strike_auraSpellScript::Apply, EFFECT_0, SPELL_EFFECT_DUMMY);
             }
         };
 
-        AuraScript* GetAuraScript() const override
+        SpellScript* GetSpellScript() const override
         {
-            return new spell_unseen_strike_auraAuraScript();
+            return new spell_unseen_strike_auraSpellScript();
         }
 };
 
@@ -1488,11 +1488,11 @@ class spell_su_dummy : public SpellScriptLoader
     public:
         spell_su_dummy() : SpellScriptLoader("spell_su_dummy") { }
 
-        class spell_su_dummyAuraScript : public AuraScript
+        class spell_su_dummySpellScript : public SpellScript
         {
-            PrepareAuraScript(spell_su_dummyAuraScript);
+            PrepareSpellScript(spell_su_dummySpellScript);
 
-            void Apply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            void Apply(SpellEffIndex /*effIndex*/)
             {
                 if (Unit* caster = GetCaster())
                 {
@@ -1506,13 +1506,13 @@ class spell_su_dummy : public SpellScriptLoader
 
             void Register() override
             {
-                OnEffectApply += AuraEffectApplyFn(spell_su_dummyAuraScript::Apply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+                OnEffectHitTarget += SpellEffectFn(spell_su_dummySpellScript::Apply, EFFECT_0, SPELL_EFFECT_DUMMY);
             }
         };
 
-        AuraScript* GetAuraScript() const override
+        SpellScript* GetSpellScript() const override
         {
-            return new spell_su_dummyAuraScript();
+            return new spell_su_dummySpellScript();
         }
 };
 
@@ -1522,11 +1522,11 @@ class spell_su_dumaura : public SpellScriptLoader
     public:
         spell_su_dumaura() : SpellScriptLoader("spell_su_dumaura") { }
 
-        class spell_su_dumauraAuraScript : public AuraScript
+        class spell_su_dumauraSpellScript : public SpellScript
         {
-            PrepareAuraScript(spell_su_dumauraAuraScript);
+            PrepareSpellScript(spell_su_dumauraSpellScript);
 
-            void Apply(AuraEffect const* /*aurEff*/, AuraEffectHandleModes /*mode*/)
+            void Apply(SpellEffIndex /*effIndex*/)
             {
                 if (Unit* caster = GetCaster())
                 {
@@ -1540,13 +1540,13 @@ class spell_su_dumaura : public SpellScriptLoader
 
             void Register() override
             {
-                OnEffectApply += AuraEffectApplyFn(spell_su_dumauraAuraScript::Apply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+                OnEffectHitTarget += SpellEffectFn(spell_su_dumauraSpellScript::Apply, EFFECT_0, SPELL_EFFECT_DUMMY);
             }
         };
 
-        AuraScript* GetAuraScript() const override
+        SpellScript* GetSpellScript() const override
         {
-            return new spell_su_dumauraAuraScript();
+            return new spell_su_dumauraSpellScript();
         }
 };
 

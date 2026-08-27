@@ -1524,4 +1524,8 @@ void AddSC_silithus()
     new npc_highlord_demitrian();
     new npcs_rutgar_and_frankal();
     new go_wind_stone();
+    new npc_anachronos_the_ancient();
+    new npc_qiraj_war_spawn();
+    new npc_anachronos_quest_trigger();
+    new go_crystalline_tear();
 }

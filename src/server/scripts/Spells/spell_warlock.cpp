@@ -616,8 +616,8 @@ class spell_warl_kil_jaedens_cunning : public SpellScriptLoader
 
             void Register() override
             {
-                OnEffectApply += AuraEffectApplyFn(spell_warl_kil_jaedens_cunning_AuraScript::HandleApply, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
-                OnEffectRemove += AuraEffectRemoveFn(spell_warl_kil_jaedens_cunning_AuraScript::HandleRemove, EFFECT_0, SPELL_AURA_DUMMY, AURA_EFFECT_HANDLE_REAL);
+                OnEffectApply += AuraEffectApplyFn(spell_warl_kil_jaedens_cunning_AuraScript::HandleApply, EFFECT_0, SPELL_AURA_CAST_WHILE_WALKING, AURA_EFFECT_HANDLE_REAL);
+                OnEffectRemove += AuraEffectRemoveFn(spell_warl_kil_jaedens_cunning_AuraScript::HandleRemove, EFFECT_0, SPELL_AURA_CAST_WHILE_WALKING, AURA_EFFECT_HANDLE_REAL);
             }
         };
 
@@ -3369,10 +3369,7 @@ class spell_warl_havoc_target_selector : public SpellScript
 
     void Register() override
     {
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_warl_havoc_target_selector::SelectTargets, EFFECT_0, TARGET_UNIT_TARGET_ENEMY);
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_warl_havoc_target_selector::SelectTargets, EFFECT_1, TARGET_UNIT_TARGET_ENEMY);
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_warl_havoc_target_selector::SelectTargets, EFFECT_2, TARGET_UNIT_TARGET_ENEMY);
-        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_warl_havoc_target_selector::SelectTargets, EFFECT_3, TARGET_UNIT_TARGET_ENEMY);
+        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_warl_havoc_target_selector::SelectTargets, EFFECT_ALL, TARGET_UNIT_TARGET_ENEMY);
         AfterCast += SpellCastFn(spell_warl_havoc_target_selector::HandleCast);
     }
 };
@@ -3564,7 +3561,10 @@ class spell_warl_command_demon : public SpellScript
     void Register() override
     {
         OnCheckCast += SpellCheckCastFn(spell_warl_command_demon::CheckCast);
-        OnEffectHitTarget += SpellEffectFn(spell_warl_command_demon::SuppressDefault, EFFECT_0, SPELL_EFFECT_FORCE_CAST);
+        SpellInfo const* spell = sSpellMgr->GetSpellInfo(m_scriptSpellId);
+        for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
+            if (spell->Effects[i].Effect == SPELL_EFFECT_FORCE_CAST)
+                OnEffectHitTarget += SpellEffectFn(spell_warl_command_demon::SuppressDefault, i, SPELL_EFFECT_FORCE_CAST);
     }
 };
 
@@ -3727,8 +3727,10 @@ class spell_warl_demonic_gateway_summon : public SpellScript
 
     void Register() override
     {
-        OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_warl_demonic_gateway_summon::SelectDestPurple, EFFECT_0, TARGET_UNK_125);
-        OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_warl_demonic_gateway_summon::SelectDestGreen,  EFFECT_0, TARGET_UNK_138);
+        if (m_scriptSpellId == 113890)
+            OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_warl_demonic_gateway_summon::SelectDestPurple, EFFECT_0, TARGET_UNK_125);
+        else if (m_scriptSpellId == 113886)
+            OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_warl_demonic_gateway_summon::SelectDestGreen, EFFECT_0, TARGET_UNK_138);
     }
 };
 

@@ -1951,7 +1951,8 @@ class spell_pal_divine_shield : public SpellScript
     void Register() override
     {
         OnCheckCast += SpellCheckCastFn(spell_pal_divine_shield::CheckCast);
-        OnEffectHitTarget += SpellEffectFn(spell_pal_divine_shield::CalculateHeal, EFFECT_3, SPELL_EFFECT_HEAL_PCT);
+        if (m_scriptSpellId == 642)
+            OnEffectHitTarget += SpellEffectFn(spell_pal_divine_shield::CalculateHeal, EFFECT_3, SPELL_EFFECT_HEAL_PCT);
         OnHit += SpellHitFn(spell_pal_divine_shield::HandleHit);
     }
 };
@@ -2639,7 +2640,9 @@ void AddSC_paladin_spell_scripts()
     new spell_pal_ardent_defender();
     new spell_pal_blessing_of_faith();
     new spell_pal_holy_shock();
-    new spell_pal_divine_storm();
+    // The legacy 54171/54172 Divine Storm heal spells do not exist in the
+    // build 18414 Spell.dbc. Glyph healing is handled by its separate script.
+    // new spell_pal_divine_storm();
     new spell_pal_righteous_defense();
     new spell_script<spell_pal_crusader_strike>("spell_pal_crusader_strike");
     new spell_script<spell_pal_seal_of_truth_hotfix>("spell_pal_seal_of_truth_hotfix");

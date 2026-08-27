@@ -294,6 +294,9 @@ void BattlePet::SetLevel(uint8 level)
     }
 
     GetOwner()->UpdateAchievementCriteria(ACHIEVEMENT_CRITERIA_TYPE_REACH_BATTLE_PET_LEVEL, level, uint32(1 << GetFamilty()));
+
+    if (level >= 3)
+        GetOwner()->KilledMonsterCredit(65876); // Level Up! - raise a battle pet to level 3
 }
 
 uint16 BattlePet::GetSpeed() const

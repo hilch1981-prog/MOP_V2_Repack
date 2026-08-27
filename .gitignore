@@ -9,3 +9,20 @@ sql/base/*.sql
 docker/db/data/*
 build.bat
 *.log
+
+# Repack runtime assets and local state
+/Data/
+/_Client/
+/repack/data/
+/repack/client/
+/repack/runtime/
+/repack/logs/
+/repack/backups/
+/repack/database/mysql/
+/repack/database/Upstream-SQL/
+/repack/database/Database-Settings.psd1
+/repack/**/*.pem
+/repack/**/*.key
+/repack/**/*.pfx
+*.7z
+*.zip

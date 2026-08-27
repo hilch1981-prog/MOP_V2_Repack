@@ -1,4 +1,4 @@
-/*
+п»ї/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -140,7 +140,7 @@ enum Spells
     // spirit of anvilrage
     SPELL_BESTOWAL_OF_ANVILRAGE          = 80874,
     SPELL_SPIRIT_OF_ANVILRAGE            = 80768,
-    SPELL_STORMBOLT                      = 80648, // править
+    SPELL_STORMBOLT                      = 80648, // РїСЂР°РІРёС‚СЊ
 
     // spirit of moltenfist
     SPELL_BESTOWAL_OF_MOLTENFIST         = 80876,
@@ -150,7 +150,7 @@ enum Spells
     // spirit of shadowforge
     SPELL_BESTOWAL_OF_SHADOWFORGE        = 80873,
     SPELL_SPIRIT_OF_SHADOWFORGE          = 80769,
-    SPELL_DWARVEN_CHAIN_LIGHTNING        = 80646, // править
+    SPELL_DWARVEN_CHAIN_LIGHTNING        = 80646, // РїСЂР°РІРёС‚СЊ
 
     // lord victor nefarius
     // omnotron
@@ -1742,7 +1742,7 @@ class spell_lord_victor_nefarius_encasing_shadows : public SpellScriptLoader
 
             void Register() override
             {
-                OnEffectHitTarget += SpellEffectFn(spell_lord_victor_nefarius_encasing_shadows_SpellScript::HandleScript, EFFECT_0, SPELL_EFFECT_SCRIPT_EFFECT);
+                OnEffectHitTarget += SpellEffectFn(spell_lord_victor_nefarius_encasing_shadows_SpellScript::HandleScript, EFFECT_0, SPELL_EFFECT_APPLY_AURA);
             }
         };
 

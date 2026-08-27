@@ -108,9 +108,16 @@ void AddSC_temple_of_kotmogu();
 //world
 void AddSC_areatrigger_scripts();
 void AddSC_argent_tournament();
+void AddSC_event_darkmoon_cannon();
+void AddSC_event_darkmoon_ring_toss();
+void AddSC_event_darkmoon_shooting_gallery();
+void AddSC_event_darkmoon_tonk_challenge();
+void AddSC_event_darkmoon_whack_a_gnoll();
 void AddSC_darkmoon_island();
 void AddSC_emerald_dragons();
 void AddSC_generic_creature();
+void AddSC_fangs_of_father_scripts();
+void AddSC_tarecgosa_scripts();
 void AddSC_go_scripts();
 void AddSC_guards();
 void AddSC_project_scripts();
@@ -1140,9 +1147,16 @@ void AddWorldScripts()
 #ifdef SCRIPTS
     AddSC_areatrigger_scripts();
     AddSC_argent_tournament();
+    AddSC_event_darkmoon_cannon();
+    AddSC_event_darkmoon_ring_toss();
+    AddSC_event_darkmoon_shooting_gallery();
+    AddSC_event_darkmoon_tonk_challenge();
+    AddSC_event_darkmoon_whack_a_gnoll();
     AddSC_darkmoon_island();
     AddSC_emerald_dragons();
     AddSC_generic_creature();
+    AddSC_fangs_of_father_scripts();
+    AddSC_tarecgosa_scripts();
     AddSC_go_scripts();
     AddSC_guards();
     AddSC_project_scripts();

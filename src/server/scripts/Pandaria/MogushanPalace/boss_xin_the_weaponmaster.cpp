@@ -1064,7 +1064,14 @@ class spell_dart : public SpellScriptLoader
 
             void Register() override
             {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_dart_SpellScript::SelectTarget, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
+                SpellInfo const* spell = sSpellMgr->GetSpellInfo(m_scriptSpellId);
+                Targets targets[] = { spell->Effects[EFFECT_0].TargetA.GetTarget(), spell->Effects[EFFECT_0].TargetB.GetTarget() };
+                for (Targets target : targets)
+                {
+                    auto category = SpellImplicitTargetInfo(target).GetSelectionCategory();
+                    if (target && (category == TARGET_SELECT_CATEGORY_AREA || category == TARGET_SELECT_CATEGORY_CONE))
+                        OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_dart_SpellScript::SelectTarget, EFFECT_0, target);
+                }
             }
         };
 
@@ -1248,7 +1255,7 @@ class spell_crossbow_xin : public SpellScriptLoader
 
             void Register() override
             {
-                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_crossbow_xin_SpellScript::SelectTarget, EFFECT_0, TARGET_UNIT_SRC_AREA_ENEMY);
+                OnObjectAreaTargetSelect += SpellObjectAreaTargetSelectFn(spell_crossbow_xin_SpellScript::SelectTarget, EFFECT_0, TARGET_UNIT_SRC_AREA_ENTRY);
             }
         };
 

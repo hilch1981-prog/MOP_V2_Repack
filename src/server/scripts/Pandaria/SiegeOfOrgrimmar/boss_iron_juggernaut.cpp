@@ -1,4 +1,4 @@
-/*
+﻿/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -1278,7 +1278,7 @@ class spell_juggernaut_demolisher_cannons_selector : public SpellScript
     }
 };
 
-// Explosive Tar 144492 �
+// Explosive Tar 144492 ч
 class spell_juggernaut_explosive_tar : public AuraScript
 {
     PrepareAuraScript(spell_juggernaut_explosive_tar);

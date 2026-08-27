@@ -62,6 +62,7 @@ class SolocraftConfig
             SoloCraftAnnounceModule = sConfigMgr->GetBoolDefault("Solocraft.Announce", 1);
             SoloCraftDebuffEnable = sConfigMgr->GetBoolDefault("SoloCraft.Debuff.Enable", 1);
             SoloCraftSpellMult = sConfigMgr->GetFloatDefault("SoloCraft.Spellpower.Mult", 2.5);
+            SoloCraftAttackMult = sConfigMgr->GetFloatDefault("SoloCraft.Attackpower.Mult", 2.0);
             SoloCraftStatsMult = sConfigMgr->GetFloatDefault("SoloCraft.Stats.Mult", 100.0);
 
             classes =
@@ -401,6 +402,7 @@ class SolocraftConfig
         bool SolocraftNoXPFlag = false; 
 
         float SoloCraftSpellMult = 1.0;
+        float SoloCraftAttackMult = 1.0;
         float SoloCraftStatsMult = 100.0;
         float SoloCraftXPMod = 1.0; 
 
@@ -579,6 +581,7 @@ protected:
         if (difficulty > 0)
         {
             int SpellPowerBonus = 0;
+            int AttackPowerBonus = 0;
 
             if (player->HasFlag(PLAYER_FIELD_PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN))
             {
@@ -600,7 +603,7 @@ protected:
                     }
                 }
 
-                QueryResult result = CharacterDatabase.PQuery("SELECT `guid`, `difficulty`, `group_size`, `spell_power`, `stats` FROM `custom_solocraft_character_stats` WHERE `guid` = %lu", player->GetGUIDLow());
+                QueryResult result = CharacterDatabase.PQuery("SELECT `guid`, `difficulty`, `group_size`, `spell_power`, `stats`, `attack_power` FROM `custom_solocraft_character_stats` WHERE `guid` = %lu", player->GetGUIDLow());
 
                 for (int32 i = STAT_STRENGTH; i < MAX_STATS; ++i)
                 {
@@ -614,6 +617,20 @@ protected:
 
                 player->SetFullHealth();
                 player->CastSpell(player, 6962, true);
+
+                if (result)
+                {
+                    int PreviousAttackPowerBonus = (*result)[5].GetInt32();
+                    player->HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, PreviousAttackPowerBonus, false);
+                    player->HandleStatModifier(UNIT_MOD_ATTACK_POWER_RANGED, TOTAL_VALUE, PreviousAttackPowerBonus, false);
+                }
+
+                if (difficulty > 0)
+                {
+                    AttackPowerBonus = static_cast<int>((player->GetLevel() * solocraftConfig.SoloCraftAttackMult) * difficulty);
+                    player->HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, AttackPowerBonus, true);
+                    player->HandleStatModifier(UNIT_MOD_ATTACK_POWER_RANGED, TOTAL_VALUE, AttackPowerBonus, true);
+                }
 
                 if (player->GetPowerType() == POWER_MANA || player->GetClass() == 11)
                 {
@@ -652,7 +669,7 @@ protected:
                     // |cffFF0000[SoloCraft]|r |cffFF8000 %s entered %s - |cffFF0000BE ADVISED - You have been debuffed by offset: %0.2f with a Class Balance Weight: %i. |cffFF8000A group member already inside has the dungeon's full buff offset. No Spellpower buff will be applied to spell casters. ALL group members must exit the dungeon and re-enter to receive a balanced offset.
                 }
 
-                CharacterDatabase.PExecute("REPLACE INTO `custom_solocraft_character_stats` (`guid`, `difficulty`, `group_size`, `spell_power`, `Stats`) VALUES (%lu, %f, %u, %i, %f)", player->GetGUIDLow(), difficulty, numInGroup, SpellPowerBonus, solocraftConfig.SoloCraftStatsMult);
+                CharacterDatabase.PExecute("REPLACE INTO `custom_solocraft_character_stats` (`guid`, `difficulty`, `group_size`, `spell_power`, `Stats`, `attack_power`) VALUES (%lu, %f, %u, %i, %f, %i)", player->GetGUIDLow(), difficulty, numInGroup, SpellPowerBonus, solocraftConfig.SoloCraftStatsMult, AttackPowerBonus);
             }
             else
             {
@@ -697,13 +714,14 @@ protected:
 
     void ClearBuffs(Player* player, Map* map)
     {
-        QueryResult result = CharacterDatabase.PQuery("SELECT `guid`, `difficulty`, `group_size`, `spell_power`, `stats` FROM `custom_solocraft_character_stats` WHERE `guid` = %lu", player->GetGUIDLow());
+        QueryResult result = CharacterDatabase.PQuery("SELECT `guid`, `difficulty`, `group_size`, `spell_power`, `stats`, `attack_power` FROM `custom_solocraft_character_stats` WHERE `guid` = %lu", player->GetGUIDLow());
 
         if (result)
         {
             float difficulty = (*result)[1].GetFloat();
             int SpellPowerBonus = (*result)[3].GetUInt32();
             float StatsMultPct = (*result)[4].GetFloat();
+            int AttackPowerBonus = (*result)[5].GetInt32();
 
             ChatHandler(player->GetSession()).PSendSysMessage(player->GetSession()->GetTrinityString(SOLOCRAFT_TRINITY_STRING_CLEAR_BUFFS), player->GetName().c_str(), map->GetMapName(), difficulty, SpellPowerBonus);
 
@@ -716,6 +734,9 @@ protected:
             {
                 player->ApplySpellPowerBonus(SpellPowerBonus, false);
             }
+
+            player->HandleStatModifier(UNIT_MOD_ATTACK_POWER, TOTAL_VALUE, AttackPowerBonus, false);
+            player->HandleStatModifier(UNIT_MOD_ATTACK_POWER_RANGED, TOTAL_VALUE, AttackPowerBonus, false);
 
             if (player->HasFlag(PLAYER_FIELD_PLAYER_FLAGS, PLAYER_FLAGS_NO_XP_GAIN) && !noXPGainFlag && !solocraftConfig.SolocraftNoXPFlag)
             {

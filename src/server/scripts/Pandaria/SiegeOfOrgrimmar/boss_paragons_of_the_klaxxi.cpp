@@ -4730,7 +4730,10 @@ class spell_paragon_explosive_ring_visual : public SpellScript
 
     void Register() override
     {
-        OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_paragon_explosive_ring_visual::SelectDest, EFFECT_0, TARGET_DEST_CASTER);
+        if (m_scriptSpellId == 144194)
+            OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_paragon_explosive_ring_visual::SelectDest, EFFECT_0, TARGET_UNK_125);
+        else
+            OnDestinationTargetSelect += SpellDestinationTargetSelectFn(spell_paragon_explosive_ring_visual::SelectDest, EFFECT_0, TARGET_DEST_CASTER);
     }
 };
 
