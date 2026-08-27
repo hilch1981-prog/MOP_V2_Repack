@@ -59,6 +59,7 @@
 #include "OutdoorPvP.h"
 #include "OutdoorPvPMgr.h"
 #include "Pet.h"
+#include "PetBattle.h"
 #include "QuestDef.h"
 #include "ReputationMgr.h"
 #include "SkillDiscovery.h"
@@ -92,6 +93,10 @@
 #include "StackTrace.h"
 
 #define ZONE_UPDATE_INTERVAL (1*IN_MILLISECONDS)
+
+// This value is kept on the server only.  Sending a custom GossipOption type
+// to the 5.4.8 client makes it execute an unrelated built-in interaction.
+static uint32 const GOSSIP_SENDER_BATTLEPET_TAMER = 0x425054;
 
 enum CharacterFlags
 {
@@ -5077,6 +5082,11 @@ bool Player::HasActiveSpell(uint32 spell) const
 TrainerSpellState Player::GetTrainerSpellState(TrainerSpell const* trainer_spell) const
 {
     if (!trainer_spell)
+        return TRAINER_SPELL_RED;
+
+    // Some trainer services, including faction/race starter battle pets, are
+    // restricted by data rather than by SkillLineAbility.dbc.
+    if (trainer_spell->raceMask && !(trainer_spell->raceMask & GetRaceMask()))
         return TRAINER_SPELL_RED;
 
     bool hasSpell = true;
@@ -16183,11 +16193,26 @@ void Player::PrepareGossipMenu(WorldObject* source, uint32 menuId /*= 0*/, bool 
 
     if (npcflags & UNIT_NPC_FLAG_STABLEMASTER && !GetBattlePetMgr().BattlePets.empty())
     {
+        // Keep the koKR text as explicit UTF-8 bytes.  MSVC otherwise compiles
+        // this narrow literal through the host code page and sends mojibake.
         std::string healText = GetSession()->GetSessionDbcLocale() == LOCALE_koKR
-            ? "전투 애완동물을 치료하고 되살려 주세요."
+            ? "\xEC\xA0\x84\xED\x88\xAC\x20\xEC\x95\xA0\xEC\x99\x84\xEB\x8F\x99\xEB\xAC\xBC\xEC\x9D\x84\x20\xEC\xB9\x98\xEB\xA3\x8C\xED\x95\x98\xEA\xB3\xA0\x20\xEB\x90\x98\xEC\x82\xB4\xEB\xA0\xA4\x20\xEC\xA3\xBC\xEC\x84\xB8\xEC\x9A\x94\x2E"
             : "Please heal and revive my battle pets.";
         menu->GetGossipMenu().AddMenuItem(63, GOSSIP_ICON_CHAT, healText, 0, GOSSIP_OPTION_BATTLEPET_HEAL, "", 0);
         menu->GetGossipMenu().AddGossipMenuItemData(63, 0, 0);
+    }
+
+    if (Creature* creature = source->ToCreature())
+    {
+        if (sPetBattleSystem->HasNpcTrainerTeam(creature->GetEntry()))
+        {
+            std::string battleText = GetSession()->GetSessionDbcLocale() == LOCALE_koKR
+                ? "\xEC\xA0\x84\xED\x88\xAC\x20\xEC\x95\xA0\xEC\x99\x84\xEB\x8F\x99\xEB\xAC\xBC\x20\xEB\x8C\x80\xEC\xA0\x84\xEC\x9D\x84\x20\xEC\x8B\x9C\xEC\x9E\x91\xED\x95\x98\xEA\xB2\xA0\xEC\x8A\xB5\xEB\x8B\x88\xEB\x8B\xA4\x2E"
+                : "I am ready for a pet battle.";
+            menu->GetGossipMenu().AddMenuItem(62, GOSSIP_ICON_BATTLE, battleText,
+                GOSSIP_SENDER_BATTLEPET_TAMER, GOSSIP_OPTION_GOSSIP, "", 0);
+            menu->GetGossipMenu().AddGossipMenuItemData(62, 0, 0);
+        }
     }
 }
 
@@ -16259,6 +16284,14 @@ void Player::OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 men
     {
         SendBuyError(BUY_ERR_NOT_ENOUGHT_MONEY, 0, 0, 0);
         PlayerTalkClass->SendCloseGossip();
+        return;
+    }
+
+    if (item->Sender == GOSSIP_SENDER_BATTLEPET_TAMER)
+    {
+        PlayerTalkClass->SendCloseGossip();
+        if (Creature* creature = source->ToCreature())
+            sPetBattleSystem->StartNpcTrainerBattle(this, creature);
         return;
     }
 
@@ -18422,7 +18455,8 @@ void Player::KilledMonsterCredit(uint32 entry, uint64 guid /*= 0*/, uint32 count
         if (!qInfo)
             continue;
 
-        if (!qInfo->GetQuestObjectiveCountType(QUEST_OBJECTIVE_TYPE_NPC))
+        if (!qInfo->GetQuestObjectiveCountType(QUEST_OBJECTIVE_TYPE_NPC) &&
+            !qInfo->GetQuestObjectiveCountType(QUEST_OBJECTIVE_TYPE_PET_BATTLE_TAMER))
             continue;
 
         // just if !ingroup || !noraidgroup || raidgroup
@@ -18432,7 +18466,8 @@ void Player::KilledMonsterCredit(uint32 entry, uint64 guid /*= 0*/, uint32 count
             for (QuestObjectiveSet::const_iterator citr = qInfo->m_questObjectives.begin(); citr != qInfo->m_questObjectives.end(); citr++)
             {
                 QuestObjective const* questObjective = *citr;
-                if (questObjective->Type == QUEST_OBJECTIVE_TYPE_NPC && questObjective->ObjectId == realEntry)
+                if ((questObjective->Type == QUEST_OBJECTIVE_TYPE_NPC || questObjective->Type == QUEST_OBJECTIVE_TYPE_PET_BATTLE_TAMER) &&
+                    questObjective->ObjectId == realEntry)
                 {
                     uint32 currentCounter = GetQuestObjectiveCounter(questObjective->Id);
                     if (currentCounter < uint32(questObjective->Amount))
@@ -19665,6 +19700,12 @@ bool Player::LoadFromDB(uint32 guid, SQLQueryHolder *holder)
 
     _LoadTalents(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_TALENTS));
     _LoadSpells(holder->GetPreparedResult(PLAYER_LOGIN_QUERY_LOAD_SPELLS));
+
+    // Older trainer data learned Battle Pet Training without executing its
+    // unlock effect.  Repair those accounts at login so tracking and the
+    // first loadout slot are available without a GM command.
+    if (HasSpell(125610))
+        m_battlePetMgr->UnlockSystem(false);
 
     for (auto&& itr : m_battlePetMgr->BattlePets)
         if (uint32 spell = db2::GetBattlePetSummonSpell(itr->GetSpecies()))

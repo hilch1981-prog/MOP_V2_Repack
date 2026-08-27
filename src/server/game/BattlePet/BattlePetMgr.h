@@ -99,7 +99,8 @@ public:
     void SaveToDb(SQLTransaction& trans);
     void SaveSlotsToDb(SQLTransaction& trans);
 
-    void UnlockLoadoutSlot(uint8 slot);
+    void UnlockSystem(bool notification = true);
+    void UnlockLoadoutSlot(uint8 slot, bool notification = true);
     bool HasLoadoutSlot(uint8 slot) const;
     uint64 GetLoadoutSlot(uint8 slot) const;
     void SetLoadoutSlot(uint8 slot, uint64 id, bool save = false);
@@ -132,7 +133,7 @@ private:
 
     bool m_loadoutSave = false;
     uint8 m_loadoutFlags = 0;
-    uint64 m_loadout[BATTLE_PET_MAX_LOADOUT_SLOTS];
+    uint64 m_loadout[BATTLE_PET_MAX_LOADOUT_SLOTS] = { };
 
     BattlePetMgr(const BattlePetMgr&) = delete;
     BattlePetMgr& operator=(const BattlePetMgr&) = delete;

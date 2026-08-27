@@ -36,6 +36,7 @@
 #include "ScriptMgr.h"
 #include "CreatureAI.h"
 #include "SpellInfo.h"
+#include "BattlePetMgr.h"
 
 enum StableResultCode
 {
@@ -225,6 +226,20 @@ void WorldSession::SendTrainerList(uint64 guid, const std::string& strTitle, boo
     {
         TrainerSpell const* tSpell = &itr->second;
 
+        // Battle Pet Training is a one-time account unlock.  Do not keep the
+        // service in the trainer list once either the purchase spell or its
+        // passive/loadout state proves the account is already unlocked.
+        if (tSpell->spell == 125610 &&
+            (_player->HasSpell(125610) ||
+             _player->HasSpell(SPELL_BATTLE_PET_TRAINING_PASSIVE) ||
+             _player->GetBattlePetMgr().HasLoadoutFlag(BATTLE_PET_LOADOUT_SLOT_FLAG_SLOT_1)))
+            continue;
+
+        // Race-restricted trainer entries must not be advertised to clients
+        // that cannot buy them. Starter battle pets rely on this DB mask.
+        if (tSpell->raceMask && !(tSpell->raceMask & _player->GetRaceMask()))
+            continue;
+
         bool valid = true;
         for (uint8 i = 0; i < MAX_SPELL_EFFECTS; ++i)
         {
@@ -344,6 +359,15 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recvData)
         return;
     }
 
+    if (spellId == 125610 &&
+        (_player->HasSpell(125610) ||
+         _player->HasSpell(SPELL_BATTLE_PET_TRAINING_PASSIVE) ||
+         _player->GetBattlePetMgr().HasLoadoutFlag(BATTLE_PET_LOADOUT_SLOT_FLAG_SLOT_1)))
+    {
+        SendTrainerBuyFailed(guid, spellId, 0);
+        return;
+    }
+
     // can't be learn, cheat? Or double learn with lags...
     if (_player->GetTrainerSpellState(trainer_spell) != TRAINER_SPELL_GREEN)
     {
@@ -367,7 +391,8 @@ void WorldSession::HandleTrainerBuySpellOpcode(WorldPacket& recvData)
     _player->SendPlaySpellVisualKit(362, 1, 0);    // 113 EmoteSalute
 
     // learn explicitly or cast explicitly
-    if (trainer_spell->IsCastable())
+    SpellInfo const* trainerSpellInfo = sSpellMgr->GetSpellInfo(trainer_spell->spell);
+    if (trainer_spell->IsCastable() || (trainerSpellInfo && trainerSpellInfo->HasEffect(SPELL_EFFECT_UNLOCK_BATTLE_PETS)))
         _player->CastSpell(_player, trainer_spell->spell, true);
     else
         _player->LearnSpell(spellId, false);

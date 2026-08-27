@@ -342,7 +342,20 @@ TempSummon* BattlePetMgr::GetCurrentSummon() const
     return creature->ToTempSummon();
 }
 
-void BattlePetMgr::UnlockLoadoutSlot(uint8 slot)
+void BattlePetMgr::UnlockSystem(bool notification)
+{
+    m_owner->SetFlag(PLAYER_FIELD_PLAYER_FLAGS, PLAYER_FLAGS_BATTLE_PET_ENABLED);
+
+    m_owner->LearnSpell(SPELL_BATTLE_PET_TRAINING_PASSIVE, false);
+    m_owner->LearnSpell(SPELL_TRACK_PETS, false);
+    m_owner->LearnSpell(SPELL_REVIVE_BATTLE_PETS, false);
+
+    uint8 unlockCount = uint8(sWorld->getIntConfig(CONFIG_BATTLE_PET_LOADOUT_UNLOCK_COUNT));
+    for (uint8 slot = 0; slot < unlockCount; ++slot)
+        UnlockLoadoutSlot(slot, notification);
+}
+
+void BattlePetMgr::UnlockLoadoutSlot(uint8 slot, bool notification)
 {
     if (HasLoadoutSlot(slot))
         return;
@@ -367,7 +380,7 @@ void BattlePetMgr::UnlockLoadoutSlot(uint8 slot)
     SetLoadoutSlot(slot, 0);
 
     // alert client of new Battle Pet loadout slot
-    SendBattlePetSlotUpdate(slot, true);
+    SendBattlePetSlotUpdate(slot, notification);
 }
 
 void BattlePetMgr::SetLoadoutSlot(uint8 slot, uint64 id, bool save)

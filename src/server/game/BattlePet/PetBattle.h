@@ -20,6 +20,19 @@
 
 #include "BattlePet.h"
 
+class Creature;
+
+struct NpcTrainerBattlePet
+{
+    uint32 Species;
+    uint8 Level;
+    uint8 Quality;
+    uint8 Breed;
+};
+
+typedef std::vector<NpcTrainerBattlePet> NpcTrainerBattlePetTeam;
+typedef std::map<uint32, NpcTrainerBattlePetTeam> NpcTrainerBattlePetStore;
+
 enum PetBattleMisc
 {
     PET_BATTLE_MAX_TEAM_PETS    = 3,
@@ -156,6 +169,7 @@ public:
 
     void AddPlayer(Player* player);
     void AddWildBattlePet(Creature* creature);
+    bool AddNpcTrainerPets(Creature* creature, NpcTrainerBattlePetTeam const& pets);
 
     void ResetActiveAbility();
 
@@ -367,6 +381,7 @@ struct PetBattleRequest
     PetBattleType Type;
     Player* Challenger;
     Unit* Opponent;
+    bool NpcTrainer = false;
 };
 
 typedef std::vector<PetBattleEffect> PetBattleEffectStore;
@@ -401,6 +416,7 @@ public:
     PetBattleState GetState() const { return m_state; }
     uint8 GetRoundResult() const { return m_roundResult; }
     BattlePet* GetCagedPet() const { return m_cagedPet; }
+    bool IsNpcTrainerBattle() const { return m_isNpcTrainerBattle; }
 
     PetBattleTeam* GetTeam(uint64 guid) const;
     PetBattleTeam* GetTeam(PetBattleTeamIndex team) const;
@@ -433,6 +449,8 @@ private:
 
     BattlePet* m_cagedPet = nullptr;
     PetBattleTeam* m_winningTeam = nullptr;
+    bool m_isNpcTrainerBattle = false;
+    uint32 m_npcTrainerEntry = 0;
 };
 
 //          petBattleId
@@ -456,6 +474,11 @@ public:
 
     void Update(uint32 diff);
 
+    void LoadNpcTrainerTeams();
+    bool HasNpcTrainerTeam(uint32 creatureEntry) const;
+    NpcTrainerBattlePetTeam const* GetNpcTrainerTeam(uint32 creatureEntry) const;
+    bool StartNpcTrainerBattle(Player* player, Creature* creature);
+
     void Create(PetBattleRequest const& request);
     void Remove(PetBattle* petBattle);
 
@@ -471,6 +494,7 @@ private:
 
     uint32 m_updatePetBattlesTimer;
     PetBattleRemoveStore m_petBattlesToRemove;
+    NpcTrainerBattlePetStore m_npcTrainerTeams;
 };
 
 #define sPetBattleSystem PetBattleSystem::instance()

@@ -128,11 +128,14 @@ void BattlePet::InitialiseAbilities(bool wild)
     for (uint8 i = 0; i < BATTLE_PET_MAX_ABILITIES; ++i)
     {
         auto& abilityPair = (*abilities)[i];
+        if (!abilityPair.FirstTier)
+            continue;
+
         if (GetLevel() < abilityPair.FirstTier->RequiredLevel)
             continue;
 
         auto abilityEntry = abilityPair.FirstTier;
-        if (GetLevel() >= abilityPair.SecondTier->RequiredLevel)
+        if (abilityPair.SecondTier && GetLevel() >= abilityPair.SecondTier->RequiredLevel)
         {
             switch (i)
             {

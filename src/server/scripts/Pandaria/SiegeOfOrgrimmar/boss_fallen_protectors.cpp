@@ -181,7 +181,7 @@ enum Spells
     SPELL_SHADOW_WEAKNESS          = 144176,
     SPELL_SHADOW_WEAKNESS_TRANSFER = 144081, // Dummy on Effect 0 to apply a stack of SPELL_SHADOW_WEAKNESS on all players when using SPELL_MARK_OF_ANGUISH_TRANSFER.
 
-    // Manifest Emotions – Embodied Despair and Embodied Desperation focus their negative emotions, creating Sha manifestations which attack players.
+    // Manifest Emotions – Embodied Despair and Embodied Desperation focus their negative emotions, creating Sha manifestations which attack players. 
     // Any damage taken by these manifested emotions will also be suffered by the creature that spawned them.
 
     // Embodied Despair

@@ -6993,18 +6993,8 @@ void Spell::EffectBattlePetsUnlock(SpellEffIndex effIndex)
     if (!player)
         return;
 
-    BattlePetMgr& battlePetMgr = player->GetBattlePetMgr();
-
-    player->SetFlag(PLAYER_FIELD_PLAYER_FLAGS, PLAYER_FLAGS_BATTLE_PET_ENABLED);
-
-    player->LearnSpell(SPELL_BATTLE_PET_TRAINING_PASSIVE, false);
-    player->LearnSpell(SPELL_TRACK_PETS, false);
-    player->LearnSpell(SPELL_REVIVE_BATTLE_PETS, false);
-
-    uint8 unlockCount = uint8(sWorld->getIntConfig(CONFIG_BATTLE_PET_LOADOUT_UNLOCK_COUNT));
-    for (uint8 slot = 0; slot < unlockCount; ++slot)
-        if (!battlePetMgr.HasLoadoutSlot(slot))
-            battlePetMgr.UnlockLoadoutSlot(slot);
+    player->GetBattlePetMgr().UnlockSystem();
+    player->LearnSpell(m_spellInfo->Id, false);
 }
 
 void Spell::EffectUncageBattlePet(SpellEffIndex effIndex)

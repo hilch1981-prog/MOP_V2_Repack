@@ -19,7 +19,12 @@
 #include "BattlePetAbilityEffect.h"
 #include "BattlePetMgr.h"
 #include "BattlePetSpawnMgr.h"
+#include "Creature.h"
+#include "DatabaseEnv.h"
+#include "DB2Stores.h"
 #include "Player.h"
+#include "World.h"
+#include "WorldSession.h"
 
 void PetBattleTeam::AddPlayer(Player* player)
 {
@@ -35,7 +40,7 @@ void PetBattleTeam::AddPlayer(Player* player)
             continue;
 
         auto battlePet = player->GetBattlePetMgr().GetBattlePet(battlePetId);
-        if (!battlePet->IsAlive())
+        if (!battlePet || !battlePet->IsAlive())
             continue;
 
         // bind pet battle information to battle pet
@@ -45,7 +50,7 @@ void PetBattleTeam::AddPlayer(Player* player)
         BattlePets.push_back(battlePet);
     }
 
-    if (m_petBattle->GetType() == PET_BATTLE_TYPE_PVE)
+    if (m_petBattle->GetType() == PET_BATTLE_TYPE_PVE && !BattlePets.empty())
         m_activePet = GetPet(0);
 }
 
@@ -64,6 +69,32 @@ void PetBattleTeam::AddWildBattlePet(Creature* creature)
         m_wildBattlePet = creature;
         SetActivePet(battlePet);
     }
+}
+
+bool PetBattleTeam::AddNpcTrainerPets(Creature* creature, NpcTrainerBattlePetTeam const& pets)
+{
+    m_wildBattlePet = creature;
+
+    uint8 localIndex = 0;
+    for (NpcTrainerBattlePet const& member : pets)
+    {
+        BattlePetSpeciesEntry const* speciesEntry = sBattlePetSpeciesStore.LookupEntry(member.Species);
+        if (!speciesEntry || localIndex >= PET_BATTLE_MAX_TEAM_PETS)
+            continue;
+
+        uint64 petId = (uint64(creature->GetGUIDLow()) << 8) | uint64(localIndex + 1);
+        BattlePet* battlePet = new BattlePet(petId, member.Species, speciesEntry->FamilyId,
+            member.Level, member.Quality, member.Breed);
+        battlePet->SetBattleInfo(m_teamIndex, ConvertToGlobalIndex(localIndex++));
+        battlePet->InitialiseAbilities();
+        BattlePets.push_back(battlePet);
+    }
+
+    if (BattlePets.empty())
+        return false;
+
+    SetActivePet(BattlePets.front());
+    return true;
 }
 
 void PetBattleTeam::ActivePetPrepareCast(uint32 abilityId)
@@ -108,6 +139,9 @@ uint8 PetBattleTeam::GetTrapStatus() const
 {
     if (m_petBattle->GetType() != PET_BATTLE_TYPE_PVE)
         return PET_BATTLE_TRAP_STATUS_NOT_CAPTURABLE;
+
+    if (m_petBattle->IsNpcTrainerBattle() && m_teamIndex == PET_BATTLE_TEAM_CHALLANGER)
+        return PET_BATTLE_TRAP_STATUS_CANT_TRAP_NPC_PET;
 
     if (m_teamIndex == PET_BATTLE_TEAM_OPPONENT)
         return PET_BATTLE_TRAP_STATUS_DISABLED;
@@ -362,7 +396,7 @@ int8 PetBattleTeam::ConvertToLocalIndex(int8 globalPetIndex) const
 
 BattlePet* PetBattleTeam::GetPet(uint32 index)
 {
-    if (index >= PET_BATTLE_MAX_TEAM_PETS)
+    if (index >= BattlePets.size())
     {
         TC_LOG_ERROR("battlepets", "PetBattleTeam::GetPet invalid pet index %u", index);
         return nullptr;
@@ -373,7 +407,8 @@ BattlePet* PetBattleTeam::GetPet(uint32 index)
 // -------------------------------------------------------------------------------
 
 PetBattle::PetBattle(uint32 battleId, PetBattleRequest const& request)
-    : m_battleId(battleId), m_type(request.Type), m_roundResult(PET_BATTLE_ROUND_RESULT_NONE)
+    : m_battleId(battleId), m_type(request.Type), m_roundResult(PET_BATTLE_ROUND_RESULT_NONE),
+      m_isNpcTrainerBattle(request.NpcTrainer), m_npcTrainerEntry(request.NpcTrainer && request.Opponent ? request.Opponent->GetEntry() : 0)
 {
     // FIXME
     auto challengerTeam = new PetBattleTeam(this, PET_BATTLE_TEAM_CHALLANGER);
@@ -387,7 +422,14 @@ PetBattle::PetBattle(uint32 battleId, PetBattleRequest const& request)
 
     if (m_type == PET_BATTLE_TYPE_PVE)
     {
-        opponentTeam->AddWildBattlePet(request.Opponent->ToCreature());
+        if (m_isNpcTrainerBattle)
+        {
+            NpcTrainerBattlePetTeam const* trainerTeam = sPetBattleSystem->GetNpcTrainerTeam(m_npcTrainerEntry);
+            ASSERT(trainerTeam);
+            ASSERT(opponentTeam->AddNpcTrainerPets(request.Opponent->ToCreature(), *trainerTeam));
+        }
+        else
+            opponentTeam->AddWildBattlePet(request.Opponent->ToCreature());
 
         // TODO: nearby wild battle pets should join the pet battle as well
         // ...
@@ -402,6 +444,10 @@ PetBattle::PetBattle(uint32 battleId, PetBattleRequest const& request)
 
 PetBattle::~PetBattle()
 {
+    if (m_isNpcTrainerBattle)
+        for (BattlePet* battlePet : m_teams[PET_BATTLE_TEAM_OPPONENT]->BattlePets)
+            delete battlePet;
+
     // clean up teams
     for (uint8 i = 0; i < PET_BATTLE_MAX_TEAMS; i++)
         delete m_teams[i];
@@ -527,6 +573,11 @@ void PetBattle::EndBattle(PetBattleTeam* lostTeam, bool forfeit)
             {
                 player->KilledMonsterCredit(65355); // Learning the Ropes - win a pet battle
 
+                // Trainer battle quests use the trainer creature entry as
+                // their kill-credit objective.
+                if (m_isNpcTrainerBattle && m_npcTrainerEntry)
+                    player->KilledMonsterCredit(m_npcTrainerEntry);
+
                 // Idk how this supposed to work. Comments on wowhead say what: only frist pet, non-pvp, don't swap pet.
                 // At current time it's uselss because in pve battles opponenet is a single pet. But nevertheless...
                 uint32 familyMask = 0;
@@ -551,7 +602,16 @@ void PetBattle::EndBattle(PetBattleTeam* lostTeam, bool forfeit)
         }
 
         if (auto creature = team->GetWildBattlePet())
-            sBattlePetSpawnMgr->LeftBattle(creature, team == lostTeam);
+        {
+            if (m_isNpcTrainerBattle)
+            {
+                creature->RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED | UNIT_FLAG_IMMUNE_TO_PC);
+                creature->SetControlled(false, UNIT_STATE_ROOT);
+                creature->SetTarget(0);
+            }
+            else
+                sBattlePetSpawnMgr->LeftBattle(creature, team == lostTeam);
+        }
     }
 
     m_state = PetBattleState::Finished;
@@ -650,6 +710,22 @@ void PetBattle::HandleRound()
         PetBattleEffect effect{ PET_BATTLE_EFFECT_AURA_PROCESSING_END };
         effect.SetNoTarget();
         m_effects.push_back(effect);
+    }
+
+    // An NPC trainer may own several pets.  Select its next living pet on
+    // the server; there is no second player client to answer the swap prompt.
+    for (PetBattleTeam* team : m_teams)
+    {
+        if (team->GetOwner() || team->GetActivePet()->IsAlive())
+            continue;
+
+        BattlePetStore availablePets;
+        team->GetAvaliablePets(availablePets);
+        if (!availablePets.empty())
+        {
+            team->ResetActiveAbility();
+            team->SetActivePet(availablePets.front());
+        }
     }
 
     // send stat updates if they changed this round
@@ -1544,6 +1620,133 @@ void PetBattleEffect::UpdateStat(int8 targetPet, uint32 value)
 }
 
 // -------------------------------------------------------------------------------
+
+void PetBattleSystem::LoadNpcTrainerTeams()
+{
+    m_npcTrainerTeams.clear();
+
+    QueryResult result = WorldDatabase.Query(
+        "SELECT NpcID, Species, Level, Quality, Breed FROM battlepet_npc_team_member ORDER BY NpcID, Species");
+    if (!result)
+    {
+        TC_LOG_INFO("server.loading", ">> Loaded 0 Battle Pet NPC trainer teams");
+        return;
+    }
+
+    uint32 memberCount = 0;
+    do
+    {
+        Field* fields = result->Fetch();
+        uint32 npcEntry = fields[0].GetUInt32();
+        NpcTrainerBattlePet member;
+        member.Species = fields[1].GetUInt32();
+        member.Level = fields[2].GetUInt8();
+        member.Quality = fields[3].GetUInt8();
+        member.Breed = fields[4].GetUInt8();
+
+        if (!sObjectMgr->GetCreatureTemplate(npcEntry) || !sBattlePetSpeciesStore.LookupEntry(member.Species))
+        {
+            TC_LOG_ERROR("sql.sql", "Invalid NPC trainer battle pet: creature %u, species %u", npcEntry, member.Species);
+            continue;
+        }
+
+        NpcTrainerBattlePetTeam& team = m_npcTrainerTeams[npcEntry];
+        if (team.size() < PET_BATTLE_MAX_TEAM_PETS)
+        {
+            team.push_back(member);
+            ++memberCount;
+        }
+    }
+    while (result->NextRow());
+
+    TC_LOG_INFO("server.loading", ">> Loaded %u Battle Pet NPC trainer teams with %u pets",
+        uint32(m_npcTrainerTeams.size()), memberCount);
+}
+
+bool PetBattleSystem::HasNpcTrainerTeam(uint32 creatureEntry) const
+{
+    return m_npcTrainerTeams.find(creatureEntry) != m_npcTrainerTeams.end();
+}
+
+NpcTrainerBattlePetTeam const* PetBattleSystem::GetNpcTrainerTeam(uint32 creatureEntry) const
+{
+    NpcTrainerBattlePetStore::const_iterator itr = m_npcTrainerTeams.find(creatureEntry);
+    return itr != m_npcTrainerTeams.end() ? &itr->second : nullptr;
+}
+
+bool PetBattleSystem::StartNpcTrainerBattle(Player* player, Creature* creature)
+{
+    if (!player || !creature || !HasNpcTrainerTeam(creature->GetEntry()))
+        return false;
+
+    if (!sWorld->getBoolConfig(CONFIG_PET_BATTLES_ENABLED))
+    {
+        player->GetSession()->SendNotification("Pet battles are disabled.");
+        return false;
+    }
+
+    if (!player->IsAlive() || player->IsInCombat() || GetPlayerPetBattle(player->GetGUID()))
+    {
+        player->GetSession()->SendNotification("You cannot start a pet battle right now.");
+        return false;
+    }
+
+    if (!creature->IsWithinDistInMap(player, PETBATTLE_INTERACTION_DIST))
+    {
+        player->GetSession()->SendNotification("You are too far away from the pet trainer.");
+        return false;
+    }
+
+    BattlePetMgr& battlePetMgr = player->GetBattlePetMgr();
+    if (!battlePetMgr.GetLoadoutSlot(0))
+    {
+        player->GetSession()->SendNotification("Place at least one living pet in your battle pet slot first.");
+        return false;
+    }
+
+    bool hasLivingPet = false;
+    for (uint8 slot = 0; slot < BATTLE_PET_MAX_LOADOUT_SLOTS; ++slot)
+        if (BattlePet* pet = battlePetMgr.GetBattlePet(battlePetMgr.GetLoadoutSlot(slot)))
+            if (pet->IsAlive())
+            {
+                hasLivingPet = true;
+                break;
+            }
+
+    if (!hasLivingPet)
+    {
+        player->GetSession()->SendNotification("All of your battle pets are dead.");
+        return false;
+    }
+
+    PetBattleRequest request = { };
+    request.OpponentGuid = creature->GetGUID();
+    request.BattleOrigin = G3D::Vector3(
+        (player->GetPositionX() + creature->GetPositionX()) * 0.5f,
+        (player->GetPositionY() + creature->GetPositionY()) * 0.5f,
+        (player->GetPositionZ() + creature->GetPositionZ()) * 0.5f);
+    request.TeamPositions[PET_BATTLE_TEAM_CHALLANGER] = G3D::Vector3(
+        player->GetPositionX(), player->GetPositionY(), player->GetPositionZ());
+    request.TeamPositions[PET_BATTLE_TEAM_OPPONENT] = G3D::Vector3(
+        creature->GetPositionX(), creature->GetPositionY(), creature->GetPositionZ());
+    request.BattleFacing = player->GetAngle(creature);
+    request.Type = PET_BATTLE_TYPE_PVE;
+    request.Challenger = player;
+    request.Opponent = creature;
+    request.NpcTrainer = true;
+
+    player->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED | UNIT_FLAG_IMMUNE_TO_NPC);
+    player->SetTarget(creature->GetGUID());
+    player->SetFacingTo(player->GetAngle(creature));
+    player->SetControlled(true, UNIT_STATE_ROOT);
+
+    creature->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PACIFIED | UNIT_FLAG_IMMUNE_TO_PC);
+    creature->SetTarget(player->GetGUID());
+    creature->SetControlled(true, UNIT_STATE_ROOT);
+
+    Create(request);
+    return true;
+}
 
 void PetBattleSystem::Update(uint32 diff)
 {

@@ -2290,6 +2290,9 @@ void World::SetInitialWorldSettings()
     TC_LOG_INFO("server.loading", "Loading Battle Pet spawn pool data...");
     sBattlePetSpawnMgr->Initialise();
 
+    TC_LOG_INFO("server.loading", "Loading Battle Pet NPC trainer teams...");
+    sPetBattleSystem->LoadNpcTrainerTeams();
+
     TC_LOG_INFO("server.loading", "Loading Battle Pay store data...");
     sBattlePayMgr->LoadFromDb();
 
