@@ -147,7 +147,7 @@ public:
 
     BattlePet* GetPet(uint32 index);
     BattlePet* GetActivePet() const { return m_activePet; }
-    void SetActivePet(BattlePet* battlePet);
+    void SetActivePet(BattlePet* battlePet, bool swapEffect = false);
 
     bool IsValidBattlePet(BattlePet* battlePet) const;
 
@@ -160,6 +160,7 @@ public:
 
     void SetPendingMove(uint8 moveType, uint32 abilityId, BattlePet* newActivePet);
     PendingRoundMove GetPendingMove() { return m_pendingMove; }
+    bool PrepareNpcMove();
 
     void ActivePetPrepareCast(uint32 abilityId);
     bool CanActivePetCast(uint32 abilityId) const;
@@ -198,7 +199,7 @@ private:
     PetBattleTeamIndex m_teamIndex;
     uint32 m_turn = 0;
     bool m_ready = false;
-    PendingRoundMove m_pendingMove;
+    PendingRoundMove m_pendingMove = { PET_BATTLE_MOVE_TYPE_SWAP_OR_PASS, nullptr, 0 };
 };
 
 // -------------------------------------------------------------------------------
@@ -302,7 +303,7 @@ public:
     void SetTurn(uint8 turn, uint8 stackDepth) { m_turn = turn; m_stackDepth = stackDepth; }
     void SetAbilityEffect(uint32 abilityEffect) { m_abilityEffect = abilityEffect; }
     void SetNoTarget();
-    void SetActivePet(int8 target);
+    void SetActivePet(int8 target, bool swapEffect = false);
     void UpdateHealth(int8 target, uint32 health);
     void UpdateState(int8 target, uint32 state, uint32 value);
     void UpdateAura(int8 targetPet, uint32 auraInstance, uint32 ability, int32 duration, uint32 turn);
@@ -446,6 +447,7 @@ private:
     uint32 m_round = 0;
     uint8 m_roundResult = 0;
     PetBattleEffectStore m_effects;                     // current round effects
+    std::vector<int8> m_deadPets;                       // pets defeated during the current round
 
     BattlePet* m_cagedPet = nullptr;
     PetBattleTeam* m_winningTeam = nullptr;

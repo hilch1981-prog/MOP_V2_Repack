@@ -98,6 +98,32 @@
 // to the 5.4.8 client makes it execute an unrelated built-in interaction.
 static uint32 const GOSSIP_SENDER_BATTLEPET_TAMER = 0x425054;
 
+// NPC trainer battles are quest-driven in MoP.  Do not expose or accept the
+// battle action before the matching trainer quest has been accepted.  Besides
+// restoring the retail flow, this prevents a questless trainer with only one
+// gossip option from dropping the client straight into a pet battle.
+static bool HasActiveBattlePetTamerQuest(Player* player, uint32 trainerEntry)
+{
+    for (QuestStatusMap::const_iterator itr = player->getQuestStatusMap().begin();
+        itr != player->getQuestStatusMap().end(); ++itr)
+    {
+        if (itr->second.Status != QUEST_STATUS_INCOMPLETE)
+            continue;
+
+        Quest const* quest = sObjectMgr->GetQuestTemplate(itr->first);
+        if (!quest)
+            continue;
+
+        for (QuestObjectiveSet::const_iterator objective = quest->m_questObjectives.begin();
+            objective != quest->m_questObjectives.end(); ++objective)
+            if ((*objective)->Type == QUEST_OBJECTIVE_TYPE_PET_BATTLE_TAMER &&
+                (*objective)->ObjectId == int32(trainerEntry))
+                return true;
+    }
+
+    return false;
+}
+
 enum CharacterFlags
 {
     CHARACTER_FLAG_NONE                 = 0x00000000,
@@ -16191,6 +16217,47 @@ void Player::PrepareGossipMenu(WorldObject* source, uint32 menuId /*= 0*/, bool 
         }
     }
 
+    // Some profession trainers use a specialization or service gossip menu
+    // that has no trainer option in the database.  If the creature really has
+    // trainer spells, always expose a usable trainer option instead of sending
+    // an empty or unrelated gossip window.  This covers primary professions,
+    // secondary skills, and their higher-rank/specialization trainers.
+    if (Creature* creature = source->ToCreature())
+    {
+        TrainerSpellData const* trainerSpells = creature->GetTrainerSpells();
+        if ((npcflags & UNIT_NPC_FLAG_TRAINER) && trainerSpells && !trainerSpells->spellList.empty())
+        {
+            bool hasTrainerOption = false;
+            for (GossipMenuItemContainer::const_iterator itr = menu->GetGossipMenu().GetMenuItems().begin();
+                itr != menu->GetGossipMenu().GetMenuItems().end(); ++itr)
+            {
+                if (itr->second.OptionType == GOSSIP_OPTION_TRAINER)
+                {
+                    hasTrainerOption = true;
+                    break;
+                }
+            }
+
+            if (!hasTrainerOption)
+            {
+                uint32 trainerOptionId = 0;
+                while (trainerOptionId < GOSSIP_MAX_MENU_ITEMS && menu->GetGossipMenu().GetItem(trainerOptionId))
+                    ++trainerOptionId;
+
+                if (trainerOptionId < GOSSIP_MAX_MENU_ITEMS)
+                {
+                    // Explicit UTF-8 avoids Korean mojibake with the MSVC host code page.
+                    std::string trainerText = GetSession()->GetSessionDbcLocale() == LOCALE_koKR
+                        ? "\xED\x9B\x88\xEB\xA0\xA8\xEC\x9D\x84\x20\xEB\xB0\x9B\xEA\xB3\xA0\x20\xEC\x8B\xB6\xEC\x8A\xB5\xEB\x8B\x88\xEB\x8B\xA4\x2E"
+                        : "Train me.";
+                    menu->GetGossipMenu().AddMenuItem(trainerOptionId, GOSSIP_ICON_TRAINER, trainerText,
+                        0, GOSSIP_OPTION_TRAINER, "", 0);
+                    menu->GetGossipMenu().AddGossipMenuItemData(trainerOptionId, 0, 0);
+                }
+            }
+        }
+    }
+
     if (npcflags & UNIT_NPC_FLAG_STABLEMASTER && !GetBattlePetMgr().BattlePets.empty())
     {
         // Keep the koKR text as explicit UTF-8 bytes.  MSVC otherwise compiles
@@ -16204,7 +16271,8 @@ void Player::PrepareGossipMenu(WorldObject* source, uint32 menuId /*= 0*/, bool 
 
     if (Creature* creature = source->ToCreature())
     {
-        if (sPetBattleSystem->HasNpcTrainerTeam(creature->GetEntry()))
+        if (sPetBattleSystem->HasNpcTrainerTeam(creature->GetEntry()) &&
+            HasActiveBattlePetTamerQuest(this, creature->GetEntry()))
         {
             std::string battleText = GetSession()->GetSessionDbcLocale() == LOCALE_koKR
                 ? "\xEC\xA0\x84\xED\x88\xAC\x20\xEC\x95\xA0\xEC\x99\x84\xEB\x8F\x99\xEB\xAC\xBC\x20\xEB\x8C\x80\xEC\xA0\x84\xEC\x9D\x84\x20\xEC\x8B\x9C\xEC\x9E\x91\xED\x95\x98\xEA\xB2\xA0\xEC\x8A\xB5\xEB\x8B\x88\xEB\x8B\xA4\x2E"
@@ -16291,7 +16359,8 @@ void Player::OnGossipSelect(WorldObject* source, uint32 gossipListId, uint32 men
     {
         PlayerTalkClass->SendCloseGossip();
         if (Creature* creature = source->ToCreature())
-            sPetBattleSystem->StartNpcTrainerBattle(this, creature);
+            if (HasActiveBattlePetTamerQuest(this, creature->GetEntry()))
+                sPetBattleSystem->StartNpcTrainerBattle(this, creature);
         return;
     }
 

@@ -104,7 +104,7 @@ void PetBattleTeam::ActivePetPrepareCast(uint32 abilityId)
 
     // find the longest duration effect for ability
     uint8 duration = 0;
-    for (uint32 i = 0; i < sBattlePetAbilityStore.GetNumRows(); i++)
+    for (uint32 i = 0; i < sBattlePetAbilityTurnStore.GetNumRows(); i++)
     {
         auto abilityTurnEntry = sBattlePetAbilityTurnStore.LookupEntry(i);
         if (!abilityTurnEntry || abilityTurnEntry->AbilityId != abilityId)
@@ -121,6 +121,9 @@ void PetBattleTeam::ActivePetPrepareCast(uint32 abilityId)
 
 bool PetBattleTeam::CanActivePetCast(uint32 abilityId) const
 {
+    if (!m_activePet || !m_activePet->IsAlive())
+        return false;
+
     if (HasMultipleTurnAbility())
         return false;
 
@@ -232,13 +235,17 @@ void PetBattleTeam::GetAvaliablePets(BattlePetStore &avaliablePets) const
     }
 }
 
-void PetBattleTeam::SetActivePet(BattlePet* battlePet)
+void PetBattleTeam::SetActivePet(BattlePet* battlePet, bool swapEffect)
 {
+    int8 sourcePet = battlePet->GetGlobalIndex();
+    if (swapEffect && m_activePet)
+        sourcePet = m_activePet->GetGlobalIndex();
+
     m_activePet = battlePet;
 
     // alert client of active pet swap
-    PetBattleEffect effect{ PET_BATTLE_EFFECT_ACTIVE_PET, battlePet->GetGlobalIndex() };
-    effect.SetActivePet(battlePet->GetGlobalIndex());
+    PetBattleEffect effect{ PET_BATTLE_EFFECT_ACTIVE_PET, sourcePet };
+    effect.SetActivePet(battlePet->GetGlobalIndex(), swapEffect);
 
     m_petBattle->AddEffect(effect);
 
@@ -343,31 +350,55 @@ void PetBattleTeam::TurnFinished()
 {
     RemoveExpiredAuras();
 
-    // reduce ability cooldowns
+    // Reduce cooldowns after sending this round's value.  Player cooldowns
+    // deliberately keep OnCooldown set for one extra packet when they reach
+    // zero so the client receives the final unlock update.  NPC teams have no
+    // client packet and can clear the flag immediately for their AI.
     for (auto&& battlePet : BattlePets)
-        for (uint8 i = 0; i < BATTLE_PET_MAX_ABILITIES; i++)
-            if (battlePet->Abilities[i] && battlePet->Abilities[i]->Cooldown)
-                battlePet->Abilities[i]->Cooldown--;
+        for (uint8 i = 0; i < BATTLE_PET_MAX_ABILITIES; ++i)
+            if (battlePet->Abilities[i] && battlePet->Abilities[i]->OnCooldown)
+            {
+                if (battlePet->Abilities[i]->Cooldown)
+                    --battlePet->Abilities[i]->Cooldown;
+
+                if (!battlePet->Abilities[i]->Cooldown && !m_owner)
+                    battlePet->Abilities[i]->OnCooldown = false;
+            }
 
     if (!HasMultipleTurnAbility())
-        m_ready = false;
-
-    // Do next turn for PvE team
-    if (!m_ready && !m_owner)
     {
-        std::vector<uint32> avaliableAbilities;
-        for (uint8 i = 0; i < BATTLE_PET_MAX_ABILITIES; i++)
-            if (m_activePet->Abilities[i])
-                if (CanActivePetCast(m_activePet->Abilities[i]->AbilityId))
-                    avaliableAbilities.push_back(m_activePet->Abilities[i]->AbilityId);
-
-        // cast ability
-        if (avaliableAbilities.size())
-            SetPendingMove(PET_BATTLE_MOVE_TYPE_CAST, avaliableAbilities[rand() % avaliableAbilities.size()], nullptr);
-        // skip turn
-        else
-            SetPendingMove(PET_BATTLE_MOVE_TYPE_SWAP_OR_PASS, 0, m_activePet);
+        m_ready = false;
+        ResetActiveAbility();
     }
+
+    PrepareNpcMove();
+}
+
+bool PetBattleTeam::PrepareNpcMove()
+{
+    if (m_owner || m_ready || !m_activePet)
+        return m_ready;
+
+    if (!m_activePet->IsAlive())
+    {
+        BattlePetStore availablePets;
+        GetAvaliablePets(availablePets);
+        if (!availablePets.empty())
+            SetPendingMove(PET_BATTLE_MOVE_TYPE_SWAP_DEAD_PET, 0, availablePets.front());
+        return m_ready;
+    }
+
+    std::vector<uint32> availableAbilities;
+    for (uint8 i = 0; i < BATTLE_PET_MAX_ABILITIES; ++i)
+        if (m_activePet->Abilities[i] && CanActivePetCast(m_activePet->Abilities[i]->AbilityId))
+            availableAbilities.push_back(m_activePet->Abilities[i]->AbilityId);
+
+    if (!availableAbilities.empty())
+        SetPendingMove(PET_BATTLE_MOVE_TYPE_CAST, availableAbilities[rand() % availableAbilities.size()], nullptr);
+    else
+        SetPendingMove(PET_BATTLE_MOVE_TYPE_SWAP_OR_PASS, 0, nullptr);
+
+    return true;
 }
 
 void PetBattleTeam::SetPendingMove(uint8 moveType, uint32 abilityId, BattlePet* newActivePet)
@@ -641,7 +672,11 @@ void PetBattle::HandleRound()
             }
             case PET_BATTLE_MOVE_TYPE_SWAP_OR_PASS:
             {
-                if (team->CanSwap(pendingMove.BattlePet))
+                // A null pet is a real pass.  Never encode it as swapping the
+                // active pet to itself; duplicate active-pet effects desync the client.
+                if (!pendingMove.BattlePet || pendingMove.BattlePet == team->GetActivePet())
+                    team->ResetActiveAbility();
+                else if (team->CanSwap(pendingMove.BattlePet))
                     SwapActivePet(pendingMove.BattlePet);
                 break;
             }
@@ -712,22 +747,6 @@ void PetBattle::HandleRound()
         m_effects.push_back(effect);
     }
 
-    // An NPC trainer may own several pets.  Select its next living pet on
-    // the server; there is no second player client to answer the swap prompt.
-    for (PetBattleTeam* team : m_teams)
-    {
-        if (team->GetOwner() || team->GetActivePet()->IsAlive())
-            continue;
-
-        BattlePetStore availablePets;
-        team->GetAvaliablePets(availablePets);
-        if (!availablePets.empty())
-        {
-            team->ResetActiveAbility();
-            team->SetActivePet(availablePets.front());
-        }
-    }
-
     // send stat updates if they changed this round
     for (auto&& team : m_teams)
     {
@@ -764,7 +783,7 @@ void PetBattle::HandleRound()
         if (Player* player = team->GetOwner())
             SendRoundResult(player);
 
-    // Remove auras, decrease cooldowns and prepare for next turn
+    // Remove auras, decrease cooldowns and prepare for next turn.
     for (auto&& team : m_teams)
         team->TurnFinished();
 
@@ -772,6 +791,7 @@ void PetBattle::HandleRound()
     m_roundResult = PET_BATTLE_ROUND_RESULT_NONE;
 
     m_effects.clear();
+    m_deadPets.clear();
 
     for (auto&& team : m_teams)
     {
@@ -808,6 +828,36 @@ void PetBattle::Update(uint32 diff)
             break;
         case PetBattleState::InProgress:
             // TODO: Turn timer for pvp
+            // The 5.4.8 client can remain input-locked after its active pet
+            // dies.  Trainer battles have no second player to coordinate with,
+            // so resolve the player's first available replacement as a
+            // dedicated swap round and make the trainer pass that round.
+            if (m_isNpcTrainerBattle && Challenger()->GetActivePet() &&
+                !Challenger()->GetActivePet()->IsAlive())
+            {
+                BattlePetStore availablePets;
+                Challenger()->GetAvaliablePets(availablePets);
+                if (!availablePets.empty())
+                {
+                    Challenger()->SetPendingMove(PET_BATTLE_MOVE_TYPE_SWAP_DEAD_PET, 0, availablePets.front());
+                    Opponent()->SetPendingMove(PET_BATTLE_MOVE_TYPE_SWAP_OR_PASS, 0, nullptr);
+                }
+            }
+
+            // PvE has no second client.  Re-arm its AI here as a watchdog so
+            // every trainer round can continue even after cooldowns or swaps.
+            Opponent()->PrepareNpcMove();
+
+            // A trainer's defeated front pet queues a dead-pet swap, but the
+            // player client does not send a normal round input while it is
+            // showing the death animation.  Supply a server-side pass so the
+            // queued swap is resolved as its own round and the action bar is
+            // unlocked for the next combat round.
+            if (m_isNpcTrainerBattle && Opponent()->GetActivePet() &&
+                !Opponent()->GetActivePet()->IsAlive() && Opponent()->IsReady() &&
+                !Challenger()->IsReady())
+                Challenger()->SetPendingMove(PET_BATTLE_MOVE_TYPE_SWAP_OR_PASS, 0, nullptr);
+
             if (Challenger()->IsReady() && Opponent()->IsReady())
                 HandleRound();
             break;
@@ -903,8 +953,14 @@ bool PetBattle::Cast(BattlePet* caster, uint32 abilityId, uint8 turn, int8 procT
 
 void PetBattle::SwapActivePet(BattlePet* battlePet, bool ignoreAlive)
 {
+    if (!battlePet)
+        return;
+
     auto team = m_teams[battlePet->GetTeamIndex()];
     if (!team->IsValidBattlePet(battlePet))
+        return;
+
+    if (team->GetActivePet() == battlePet)
         return;
 
     if (!team->CanSwap(battlePet, ignoreAlive))
@@ -912,13 +968,9 @@ void PetBattle::SwapActivePet(BattlePet* battlePet, bool ignoreAlive)
 
     // update team information
     team->ResetActiveAbility();
-    team->SetActivePet(battlePet);
-
-    // alert client of active pet swap
-    PetBattleEffect effect{ PET_BATTLE_EFFECT_ACTIVE_PET, battlePet->GetGlobalIndex() };
-    effect.SetActivePet(battlePet->GetGlobalIndex());
-
-    m_effects.push_back(effect);
+    // Preserve the old front pet as the swap-effect source while selecting
+    // the replacement as its target.
+    team->SetActivePet(battlePet, true);
 }
 
 void PetBattle::UpdatePetState(BattlePet* source, BattlePet* target, uint32 abilityEffect, uint32 state, int32 value, PetBattleEffectFlags flags)
@@ -1012,6 +1064,13 @@ void PetBattle::Kill(BattlePet* killer, BattlePet* victim, uint32 abilityEffect,
         aura->Expire();
 
     UpdatePetState(killer, victim, abilityEffect, BATTLE_PET_STATE_IS_DEAD, 1, flags);
+
+    // The 5.4.8 client uses both the death state effect and the explicit dead
+    // pet list to finish the current animation sequence.  Omitting this list
+    // leaves the UI waiting for a front-pet selection after an NPC trainer
+    // automatically brings out its next pet.
+    if (std::find(m_deadPets.begin(), m_deadPets.end(), victim->GetGlobalIndex()) == m_deadPets.end())
+        m_deadPets.push_back(victim->GetGlobalIndex());
 
     m_roundResult = PET_BATTLE_ROUND_RESULT_CATCH_OR_KILL;
 }
@@ -1387,7 +1446,7 @@ void PetBattle::SendRoundResult(Player* player)
     }
 
     data.WriteBit(!GetRoundResult());
-    data.WriteBits(0, 3);
+    data.WriteBits(m_deadPets.size(), 3);
     size_t cooldownPos = data.bitwpos();
     data.WriteBits(0, 20);
 
@@ -1496,6 +1555,9 @@ void PetBattle::SendRoundResult(Player* player)
     if (uint8 roundResult = GetRoundResult())
         data << uint8(roundResult);
 
+    for (int8 deadPet : m_deadPets)
+        data << uint8(deadPet);
+
     player->SendDirectMessage(&data);
 }
 
@@ -1566,9 +1628,16 @@ void PetBattleEffect::SetNoTarget()
     Targets.push_back(target);
 }
 
-void PetBattleEffect::SetActivePet(int8 targetPet)
+void PetBattleEffect::SetActivePet(int8 targetPet, bool swapEffect)
 {
-    PetBattleEffectTarget target;
+    // PET targets have an optional health field in the 5.4.8 bitstream.  The
+    // union must be zeroed or stack garbage advertises a value that is not
+    // written consistently, leaving the client stuck between rounds.
+    PetBattleEffectTarget target = { };
+    // Active-pet changes carry the new PBOID in Target.  Target type NONE is
+    // the wire format expected by the 5.4.8 client for both voluntary and
+    // automatic replacement swaps; PET is reserved for payloads such as
+    // remaining health.
     target.Type = PET_BATTLE_EFFECT_TARGET_EX_NONE;
     target.Target = targetPet;
 

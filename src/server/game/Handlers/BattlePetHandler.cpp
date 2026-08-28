@@ -810,6 +810,28 @@ void WorldSession::HandlePetBattleSetFrontPet(WorldPacket& recvData)
 
     if (team->GetActivePet()->IsAlive())
     {
+        // After an NPC trainer pet dies, the 5.4.8 client confirms the still
+        // living player front pet before it will unlock the action bar.  Use
+        // that confirmation as the player's pass for the dedicated NPC
+        // replacement round.  The opponent AI has already queued its dead-pet
+        // swap in TurnFinished(), so the next update sends only the swap effect
+        // and then returns control to the player.
+        if (battle->IsNpcTrainerBattle() && battle->GetState() == PetBattleState::InProgress)
+        {
+            PetBattleTeam* opponent = battle->Opponent();
+            if (opponent && opponent->GetActivePet() && !opponent->GetActivePet()->IsAlive())
+            {
+                BattlePetStore availablePets;
+                opponent->GetAvaliablePets(availablePets);
+                if (!availablePets.empty())
+                {
+                    team->SetPendingMove(PET_BATTLE_MOVE_TYPE_SWAP_OR_PASS, 0, nullptr);
+                    TC_LOG_INFO("network", "CMSG_PET_BATTLE_SET_FRONT_PET Player %u acknowledged NPC replacement with pet %u", GetPlayer()->GetGUIDLow(), petNum);
+                    return;
+                }
+            }
+        }
+
         TC_LOG_ERROR("network", "CMSG_PET_BATTLE_SET_FRONT_PET Player %u want to swap dead pet but it is alive", GetPlayer()->GetGUIDLow());
         return;
     }

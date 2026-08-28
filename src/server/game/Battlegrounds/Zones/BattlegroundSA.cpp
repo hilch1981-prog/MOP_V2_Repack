@@ -1164,7 +1164,10 @@ void BattlegroundSA::UpdateBombSpawns()
 {
     for (uint8 i = BG_SA_BOMB; i < BG_SA_MAXOBJ; i++)
     {
-        if (GetBGObject(i))
+        // Empty bomb slots are normal before the matching graveyard is owned.
+        // Inspect the GUID table directly so the normal state is not logged as
+        // an error by GetBGObject.
+        if (BgObjects[i])
             continue;
 
         if (bombsLocationWest.GetExactDist2d(BG_SA_ObjSpawnlocs[i][0], BG_SA_ObjSpawnlocs[i][1]) < 50.0f && GraveyardStatus[BG_SA_LEFT_CAPTURABLE_GY] != Attackers)
@@ -1176,11 +1179,14 @@ void BattlegroundSA::UpdateBombSpawns()
         if (bombsLocationRelic.GetExactDist2d(BG_SA_ObjSpawnlocs[i][0], BG_SA_ObjSpawnlocs[i][1]) < 50.0f && GraveyardStatus[BG_SA_CENTRAL_CAPTURABLE_GY] != Attackers) // Which graveyard?
             continue;
 
-        AddObject(i, BG_SA_ObjEntries[BG_SA_BOMB],
+        if (!AddObject(i, BG_SA_ObjEntries[BG_SA_BOMB],
             BG_SA_ObjSpawnlocs[i][0], BG_SA_ObjSpawnlocs[i][1],
             BG_SA_ObjSpawnlocs[i][2], BG_SA_ObjSpawnlocs[i][3],
-            0,0,0,0,RESPAWN_ONE_DAY);
-        GetBGObject(i)->SetUInt32Value(GAMEOBJECT_FIELD_FACTION_TEMPLATE, BG_SA_Factions[Attackers]);
+            0,0,0,0,RESPAWN_ONE_DAY))
+            continue;
+
+        if (GameObject* bomb = GetBGObject(i))
+            bomb->SetUInt32Value(GAMEOBJECT_FIELD_FACTION_TEMPLATE, BG_SA_Factions[Attackers]);
     }
 }
 

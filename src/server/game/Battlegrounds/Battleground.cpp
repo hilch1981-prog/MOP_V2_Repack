@@ -351,20 +351,19 @@ void Battleground::UpdateDumpenning(uint32 diff)
 
         ++m_DampeningCounter;
 
-        for (auto&& team : m_arenaTeams)
+        // Apply dampening to players actually present in the arena. Skirmish
+        // and unrated arenas do not necessarily have persistent team rosters.
+        for (auto const& entry : m_Players)
         {
-            for (auto&& it : *team)
+            Player* player = ObjectAccessor::FindPlayer(entry.first);
+            if (player && player->GetMap() == GetBgMap())
             {
-                Player* player = ObjectAccessor::FindPlayer(it->Guid);
-                if (player && player->GetMap() == GetBgMap())
-                {
-                    ApplyDampening(player, m_DampeningCounter);
-                    if (Pet* pet = player->GetPet())
-                        ApplyDampening(pet, m_DampeningCounter);
-                    for (auto&& summon : player->GetSummons())
-                        if (summon->IsGuardian())
-                            ApplyDampening(summon, m_DampeningCounter);
-                }
+                ApplyDampening(player, m_DampeningCounter);
+                if (Pet* pet = player->GetPet())
+                    ApplyDampening(pet, m_DampeningCounter);
+                for (auto&& summon : player->GetSummons())
+                    if (summon->IsGuardian())
+                        ApplyDampening(summon, m_DampeningCounter);
             }
         }
     }

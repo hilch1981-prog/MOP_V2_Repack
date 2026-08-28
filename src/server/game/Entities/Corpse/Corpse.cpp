@@ -102,7 +102,9 @@ void Corpse::SaveToDB()
 
     uint16 index = 0;
     PreparedStatement* stmt = CharacterDatabase.GetPreparedStatement(CHAR_INS_CORPSE);
-    stmt->setUInt32(index++, GetGUIDLow());                                           // corpseGuid
+    // Runtime corpse GUIDs are map-local, while corpse.corpseGuid is a global
+    // primary key. Use the globally unique owner character GUID for storage.
+    stmt->setUInt32(index++, GUID_LOPART(GetOwnerGUID()));                            // corpseGuid
     stmt->setUInt32(index++, GUID_LOPART(GetOwnerGUID()));                            // guid
     stmt->setFloat (index++, GetPositionX());                                         // posX
     stmt->setFloat (index++, GetPositionY());                                         // posY

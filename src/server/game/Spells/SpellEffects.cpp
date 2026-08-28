@@ -7102,19 +7102,13 @@ void Spell::EffectBonusRoll(SpellEffIndex effIndex)
 
     if (m_CastItem)
     {
-        BonusLootTemplate lootTemplate;
-        lootTemplate.LootIdPersonal = m_CastItem->GetEntry();
-        lootTemplate.Source = BonusLootTemplate::Item;
-        lootTemplate.Spell = GetSpellInfo()->Id;
-        lootTemplate.LootIdHeroic = 0;
-        lootTemplate.LootIdNormal = 0;
-        lootTemplate.Currency = 0;
-
-        BonusLoot loot{ &lootTemplate, REGULAR_DIFFICULTY };
-        if (loot)
-            loot.Reward(player);
-        else
-            TC_LOG_ERROR("shitlog", "Spell::EffectBonusRoll - !loot, %u, " UI64FMTD, GetSpellInfo()->Id, m_caster->GetGUID());
+        // MoP pet-supply bags use SPELL_EFFECT_BONUS_ROLL to deliver every
+        // successful item_loot_template roll directly to the inventory.  The
+        // generic BonusLoot helper intentionally selects only one item and
+        // ignores per-entry chances and stack counts, which made these bags
+        // disappear without granting their proper contents.
+        uint32 itemEntry = m_CastItem->GetEntry();
+        player->AutoStoreLoot(itemEntry, LootTemplates_Item, ItemPickupSourceType::ItemLoot, itemEntry);
     }
     else
     {
