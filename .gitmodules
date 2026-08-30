@@ -1,0 +1,4 @@
+[submodule "modules/mod-playerbots"]
+	path = modules/mod-playerbots
+	url = https://github.com/DigiD702/mod-playerbots.git
+	branch = main
