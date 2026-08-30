@@ -80,6 +80,15 @@ target_include_directories(modules
 target_link_libraries(modules game)
 add_dependencies(modules game revision.h)
 
+# Keep ScriptLoader.cpp untouched. When modules are enabled, the scripts
+# library's AddScripts symbol is renamed to AddCoreScripts at compile time and
+# ModulesScriptBridge.cpp restores AddScripts(), invoking Core scripts first
+# and optional modules second.
+if(TARGET scripts)
+  target_compile_definitions(scripts PRIVATE AddScripts=AddCoreScripts)
+  target_sources(scripts PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ModulesScriptBridge.cpp)
+endif()
+
 # src/ is configured before modules/, therefore worldserver already exists.
 # Linking here keeps the generic module integration out of worldserver's own
 # CMakeLists.txt and preserves a smaller Core diff.
