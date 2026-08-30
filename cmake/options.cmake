@@ -6,4 +6,4 @@
 # modifications, as long as this notice is preserved.
 #
 # This program is distributed in the hope that it will be useful, but
-#
+# WITHOUT ANY
