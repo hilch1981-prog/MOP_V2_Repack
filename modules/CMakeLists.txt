@@ -25,9 +25,6 @@ foreach(CHIPA_MODULE_DIR ${CHIPA_MODULE_CANDIDATES})
     unset(CHIPA_MODULE_SOURCES_LOCAL)
     unset(CHIPA_MODULE_INCLUDE_DIRS_LOCAL)
 
-    # The manifest sets CHIPA_MODULE_NAME, CHIPA_MODULE_LOADER,
-    # CHIPA_MODULE_SOURCES and CHIPA_MODULE_INCLUDE_DIRS. Preserve global lists
-    # around the include so multiple modules can be aggregated safely.
     set(_CHIPA_GLOBAL_SOURCES ${CHIPA_MODULE_SOURCES})
     set(_CHIPA_GLOBAL_INCLUDE_DIRS ${CHIPA_MODULE_INCLUDE_DIRS})
 
@@ -82,6 +79,13 @@ target_include_directories(modules
 
 target_link_libraries(modules game)
 add_dependencies(modules game revision.h)
+
+# src/ is configured before modules/, therefore worldserver already exists.
+# Linking here keeps the generic module integration out of worldserver's own
+# CMakeLists.txt and preserves a smaller Core diff.
+if(TARGET worldserver)
+  target_link_libraries(worldserver modules)
+endif()
 
 if(CHIPA_MODULE_NAMES)
   list(LENGTH CHIPA_MODULE_NAMES CHIPA_MODULE_COUNT)
