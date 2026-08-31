@@ -68,8 +68,6 @@ jobs:
             -DSCRIPTS=1 \
             -DTOOLS=0 \
             -DMODULES=${{ matrix.modules }} \
-            -DUSE_COREPCH=0 \
-            -DUSE_SCRIPTPCH=0 \
             2>&1 | tee "configure-${{ matrix.modules }}.log"
 
       - name: Verify module discovery
