@@ -21,12 +21,29 @@
 #include "GameEventMgr.h"
 #include "Vehicle.h"
 
+// These legacy tables flatten four position scalars into their parent aggregate.
+// Position has a user-provided constructor, so modern C++ brace elision cannot
+// consume those four scalars as a nested Position object. Keep the table data
+// unchanged and use an aggregate-compatible adapter that converts at call sites.
+struct LegacyHallowEndPosition
+{
+    float x;
+    float y;
+    float z;
+    float o;
+
+    operator Position() const
+    {
+        return Position(x, y, z, o);
+    }
+};
+
 struct PostionEventoHallowend
 {
     uint32 Area;
     uint8 Area_Count;
     bool AlreadyFired;
-    Position SpawnPosition;
+    LegacyHallowEndPosition SpawnPosition;
 }
 
 PostionEventoHallowends[] =
@@ -614,7 +631,7 @@ struct WaypointsShadeOfTheHorsemans
 {
     uint32 area;
     bool CastPoint;
-    Position waypoint;
+    LegacyHallowEndPosition waypoint;
 }
 
 WaypointsShadeOfTheHorsemans[] =
