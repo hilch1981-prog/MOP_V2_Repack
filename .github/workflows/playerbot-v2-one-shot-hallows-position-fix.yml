@@ -1,0 +1,66 @@
+name: PlayerBot V2 one-shot Hallows End C++14 fix
+
+on:
+  push:
+    branches:
+      - playerbot-v2-poc
+    paths:
+      - .github/workflows/playerbot-v2-one-shot-hallows-position-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix-hallows-position-tables:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout active branch
+        uses: actions/checkout@v4
+        with:
+          ref: playerbot-v2-poc
+          fetch-depth: 0
+
+      - name: Preserve legacy flat position tables under C++14
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/server/scripts/Events/hallows_end.cpp')
+          data = path.read_bytes()
+
+          marker = b'#include "Vehicle.h"\n\nstruct PostionEventoHallowend'
+          helper = b'''#include "Vehicle.h"\n\n// These legacy tables flatten four position scalars into their parent aggregate.\n// Position has a user-provided constructor, so modern C++ brace elision cannot\n// consume those four scalars as a nested Position object. Keep the table data\n// unchanged and use an aggregate-compatible adapter that converts at call sites.\nstruct LegacyHallowEndPosition\n{\n    float x;\n    float y;\n    float z;\n    float o;\n\n    operator Position() const\n    {\n        return Position(x, y, z, o);\n    }\n};\n\nstruct PostionEventoHallowend'''
+
+          if data.count(marker) != 1:
+              raise SystemExit(f'expected one include/struct marker, found {data.count(marker)}')
+          data = data.replace(marker, helper, 1)
+
+          replacements = {
+              b'    Position SpawnPosition;': b'    LegacyHallowEndPosition SpawnPosition;',
+              b'    Position waypoint;': b'    LegacyHallowEndPosition waypoint;',
+          }
+          for old, new in replacements.items():
+              count = data.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one occurrence of {old!r}, found {count}')
+              data = data.replace(old, new, 1)
+
+          path.write_bytes(data)
+          PY
+
+          git diff --check
+          git diff -- src/server/scripts/Events/hallows_end.cpp
+
+      - name: Commit source fix and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/playerbot-v2-one-shot-hallows-position-fix.yml
+          git add src/server/scripts/Events/hallows_end.cpp
+          git diff --cached --check
+          git commit -m 'build(cxx14): preserve legacy Hallows End position tables'
+          git push origin HEAD:playerbot-v2-poc
