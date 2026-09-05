@@ -56,8 +56,21 @@ jobs:
           set -euxo pipefail
           git rev-parse HEAD | tee runtime-head.txt
           git submodule status --recursive | tee submodules.txt
+
+          # The runtime gitlink is the authoritative module pin for this exact
+          # commit. Do not hard-code a historical G1 SHA here: later-gate
+          # preparatory revisions must still prove that checkout matches the
+          # reviewed gitlink exactly without rewriting prior G1 evidence.
+          expected_module_sha="$(git rev-parse HEAD:modules/mod-playerbots)"
+          actual_module_sha="$(git -C modules/mod-playerbots rev-parse HEAD)"
+          {
+            echo "expected_module_sha=${expected_module_sha}"
+            echo "actual_module_sha=${actual_module_sha}"
+          } | tee module-pin.txt
+
           if [ "${{ matrix.modules }}" = "1" ]; then
-            test "$(git -C modules/mod-playerbots rev-parse HEAD)" = "78bc93512f8c3b26175321e98eb0bede42917ce6"
+            test -n "${expected_module_sha}"
+            test "${actual_module_sha}" = "${expected_module_sha}"
           fi
 
       - name: Configure
@@ -105,6 +118,7 @@ jobs:
           path: |
             runtime-head.txt
             submodules.txt
+            module-pin.txt
             configure-${{ matrix.modules }}.log
             build-${{ matrix.modules }}.log
             worldserver-files.txt
