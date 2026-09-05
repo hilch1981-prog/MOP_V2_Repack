@@ -13,7 +13,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: playerbot-v2-poc-${{ github.ref }}
+  # Normalize push and pull_request runs to the source branch so the same
+  # PlayerBot revision does not consume two full two-hour build slots.
+  group: playerbot-v2-poc-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
