@@ -1,4 +1,4 @@
-﻿/*
+/*
 * This file is part of the Pandaria 5.4.8 Project. See THANKS file for Copyright information
 *
 * This program is free software; you can redistribute it and/or modify it
@@ -96,9 +96,9 @@
 
 void AFDRoyaleUpdateHook(uint32 diff);
 
-std::atomic<bool> World::m_stopEvent = false;
+std::atomic<bool> World::m_stopEvent{false};
 uint8 World::m_ExitCode = SHUTDOWN_EXIT_CODE;
-std::atomic<uint32> World::m_worldLoopCounter = 0;
+std::atomic<uint32> World::m_worldLoopCounter{0};
 
 float World::m_MaxVisibleDistanceOnContinents = DEFAULT_VISIBILITY_DISTANCE;
 float World::m_MaxVisibleDistanceInInstances  = DEFAULT_VISIBILITY_INSTANCE;

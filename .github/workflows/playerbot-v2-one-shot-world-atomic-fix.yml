@@ -1,0 +1,57 @@
+name: PlayerBot V2 one-shot World atomic fix
+
+on:
+  push:
+    branches:
+      - playerbot-v2-poc
+    paths:
+      - .github/workflows/playerbot-v2-one-shot-world-atomic-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix-world-atomics:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout active branch
+        uses: actions/checkout@v4
+        with:
+          ref: playerbot-v2-poc
+          fetch-depth: 0
+
+      - name: Apply exact C++14 atomic initialization fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('src/server/game/World/World.cpp')
+          data = path.read_bytes()
+          replacements = {
+              b'std::atomic<bool> World::m_stopEvent = false;': b'std::atomic<bool> World::m_stopEvent{false};',
+              b'std::atomic<uint32> World::m_worldLoopCounter = 0;': b'std::atomic<uint32> World::m_worldLoopCounter{0};',
+          }
+          for old, new in replacements.items():
+              count = data.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected exactly one occurrence of {old!r}, found {count}')
+              data = data.replace(old, new, 1)
+          path.write_bytes(data)
+          PY
+
+          grep -F 'std::atomic<bool> World::m_stopEvent{false};' src/server/game/World/World.cpp
+          grep -F 'std::atomic<uint32> World::m_worldLoopCounter{0};' src/server/game/World/World.cpp
+
+      - name: Commit source fix and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git rm .github/workflows/playerbot-v2-one-shot-world-atomic-fix.yml
+          git add src/server/game/World/World.cpp
+          git diff --cached --check
+          git commit -m 'build(cxx14): directly initialize world atomics'
+          git push origin HEAD:playerbot-v2-poc

@@ -24,6 +24,10 @@
 #include <cstddef>
 #include <cstdint>
 
+#if PLATFORM != PLATFORM_WINDOWS
+#  include <limits.h>
+#endif
+
 #define TRINITY_LITTLEENDIAN 0
 #define TRINITY_BIGENDIAN    1
 

@@ -1,0 +1,4 @@
+[submodule "modules/mod-playerbots"]
+	path = modules/mod-playerbots
+	url = https://github.com/hilch1981-prog/mod-playerbots.git
+	branch = mop-5.4.8-v2
